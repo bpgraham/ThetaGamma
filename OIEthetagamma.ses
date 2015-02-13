@@ -1,14 +1,9 @@
 {load_file("nrngui.hoc")}
 objectvar save_window_, rvp_
-objectvar scene_vector_[6]
+objectvar scene_vector_[7]
 objectvar ocbox_, ocbox_list_, scene_, scene_list_
 {ocbox_list_ = new List()  scene_list_ = new List()}
 {pwman_place(0,0,0)}
-{
-xpanel("Graphics", 0)
-xbutton("Raster plot","showraster()")
-xpanel(39,574)
-}
 {
 xpanel("RunControl", 0)
 v_init = -65
@@ -32,13 +27,13 @@ screen_update_invl = 0.05
 xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
 realtime = 10.11
 xvalue("Real Time","realtime", 0,"", 0, 1 )
-xpanel(3,126)
+xpanel(2,126)
 }
 {
 save_window_ = new Graph(0)
 save_window_.size(0,4000,-80,40)
-scene_vector_[3] = save_window_
-{save_window_.view(0, -80, 4000, 120, 366, 13, 602.1, 188.2)}
+scene_vector_[2] = save_window_
+{save_window_.view(0, -80, 4000, 120, 366, 12, 602.1, 188.2)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
@@ -46,7 +41,7 @@ save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
 {
 save_window_ = new Graph(0)
 save_window_.size(0,4000,-80,40)
-scene_vector_[4] = save_window_
+scene_vector_[3] = save_window_
 {save_window_.view(0, -80, 4000, 120, 366, 300, 599.4, 144.1)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
@@ -55,11 +50,17 @@ save_window_.addexpr("Icell.object(1).soma.v(0.5)", 1, 1, 0.8, 0.9, 2)
 {
 save_window_ = new Graph(0)
 save_window_.size(0,4000,-80,40)
-scene_vector_[5] = save_window_
-{save_window_.view(0, -80, 4000, 120, 366, 537, 598.5, 159.4)}
+scene_vector_[4] = save_window_
+{save_window_.view(0, -80, 4000, 120, 366, 536, 598.5, 159.4)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("Ocell.object(1).soma.v(0.5)", 1, 1, 0.8, 0.9, 2)
+}
+{
+xpanel("Graphics", 0)
+xbutton("Raster plot","showraster()")
+xbutton("Spike histograms","showhist()")
+xpanel(64,576)
 }
 objectvar scene_vector_[1]
 {doNotify()}
