@@ -1,0 +1,149 @@
+// Cell templates
+// BPG 12-2-15 (modified from Tort/Kopell ModelDB 138421 code)
+
+begintemplate ECell
+public soma
+public pre_list, connect2target
+objref pre_list
+
+create soma
+
+proc init() {
+	soma {
+		L = 10
+		diam = 10/PI
+		cm = 1
+   
+		insert Ecellchann
+	}
+	pre_list = new List()
+	synapses()
+
+}
+
+obfunc connect2target() { localobj nc //$o1 target point process, optional $o2 returned NetCon
+  	soma nc = new NetCon(&v(1), $o1)
+  	nc.threshold = -10
+  	if (numarg() == 2) { $o2 = nc } // for backward compatibility
+  	return nc
+}
+
+objref syn_
+proc synapses() {
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 0: AMPA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
+  	soma syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 1: NMDA
+    	syn_.tcon = 2.3	
+    	syn_.tcoff = 100
+    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: BC-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 10
+    	syn_.e = -80
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: OLM-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 20
+    	syn_.e = -80
+}
+
+endtemplate ECell
+
+
+
+begintemplate ICell
+public soma
+public pre_list, connect2target
+objref pre_list
+
+create soma
+
+proc init() {
+	soma {
+		L = 10
+		diam = 10/PI
+		cm = 1
+   
+		insert Icellchann
+	}
+	pre_list = new List()
+	synapses()
+
+}
+
+obfunc connect2target() { localobj nc //$o1 target point process, optional $o2 returned NetCon
+  	soma nc = new NetCon(&v(1), $o1)
+  	nc.threshold = -10
+  	if (numarg() == 2) { $o2 = nc } // for backward compatibility
+  	return nc
+}
+
+objref syn_
+proc synapses() {
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 0: AMPA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
+  	soma syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 1: NMDA
+    	syn_.tcon = 2.3	
+    	syn_.tcoff = 100
+    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: BC-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 10
+    	syn_.e = -80
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: OLM-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 20
+    	syn_.e = -80
+}
+
+endtemplate ICell
+
+
+
+begintemplate OCell
+public soma
+public pre_list, connect2target
+objref pre_list
+
+create soma
+
+proc init() {
+	soma {
+		L = 10
+		diam = 10/PI
+   		cm = 1.3
+   	
+		insert Ocellchann
+	}
+	pre_list = new List()
+	synapses()
+
+}
+
+obfunc connect2target() { localobj nc //$o1 target point process, optional $o2 returned NetCon
+  	soma nc = new NetCon(&v(1), $o1)
+  	nc.threshold = -10
+  	if (numarg() == 2) { $o2 = nc } // for backward compatibility
+  	return nc
+}
+
+objref syn_
+proc synapses() {
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 0: AMPA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
+  	soma syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 1: NMDA
+    	syn_.tcon = 2.3	
+    	syn_.tcoff = 100
+    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: BC-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 10
+    	syn_.e = -80
+}
+
+endtemplate OCell
