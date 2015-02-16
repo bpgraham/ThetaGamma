@@ -9,12 +9,14 @@ modl_reg(){
 	fprintf(stderr, "Additional mechanisms from files\n");
 
 fprintf(stderr," ECellOlufsen.mod");
+fprintf(stderr," ECellTort.mod");
 fprintf(stderr," IcellWangBuzsaki.mod");
 fprintf(stderr," OCellTort.mod");
 fprintf(stderr," nmda.mod");
 fprintf(stderr, "\n");
     }
 _ECellOlufsen_reg();
+_ECellTort_reg();
 _IcellWangBuzsaki_reg();
 _OCellTort_reg();
 _nmda_reg();

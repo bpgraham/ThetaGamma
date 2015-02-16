@@ -1,5 +1,65 @@
 // Cell templates
-// BPG 12-2-15 (modified from Tort/Kopell ModelDB 138421 code)
+// BPG 16-2-15 (modified from Tort/Kopell ModelDB 138421 code)
+
+begintemplate ECell5
+public soma, Adend, Bdend
+public pre_list, connect2target
+objref pre_list
+
+create soma, Adend[3], Bdend
+
+proc init() {
+	soma {L = 20 diam = 20}
+	Bdend {L = 200 diam = 2}
+	Adend[0] {L = 150 diam = 2}
+	Adend[1] {L = 150 diam = 2}
+	Adend[2] {L = 150 diam = 2}
+	
+	forall {cm = 1 Ra = 150 insert Ecell5chann gl_Ecell5chann = 1/28000}
+	Bdend {bk_Ecell5chann = 1}
+	Adend[0] {gh_Ecell5chann=0.0002 gA_Ecell5chann=0.072 bk_Ecell5chann = 0.5}
+	Adend[1] {gh_Ecell5chann=0.0004 gA_Ecell5chann=0.120 v50_Ecell5chann = -90 
+		bk_Ecell5chann = 0.5 ck_Ecell5chann = 2 dk_Ecell5chann = 1.8
+		ak_Ecell5chann = -1 fk_Ecell5chann = 0.7}
+	Adend[2] {gh_Ecell5chann=0.0007 gA_Ecell5chann=0.2 v50_Ecell5chann = -90 
+		bk_Ecell5chann = 0.5 ck_Ecell5chann = 2 dk_Ecell5chann = 1.8
+		ak_Ecell5chann = -1 fk_Ecell5chann = 0.7 cm = 2 gl_Ecell5chann = 2/28000}
+	
+	pre_list = new List()
+	synapses()
+
+}
+
+obfunc connect2target() { localobj nc //$o1 target point process, optional $o2 returned NetCon
+  	soma nc = new NetCon(&v(1), $o1)
+  	nc.threshold = -10
+  	if (numarg() == 2) { $o2 = nc } // for backward compatibility
+  	return nc
+}
+
+objref syn_
+proc synapses() {
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 0: AMPA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
+  	soma syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 1: NMDA
+    	syn_.tcon = 2.3	
+    	syn_.tcoff = 100
+    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
+	soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: BC-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 10
+    	syn_.e = -80
+	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: OLM-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 20
+    	syn_.e = -80
+}
+
+endtemplate ECell5
+
+
 
 begintemplate ECell
 public soma

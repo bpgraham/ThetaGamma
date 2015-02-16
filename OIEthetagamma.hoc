@@ -7,6 +7,8 @@
 load_file("nrngui.hoc") // make graphical interface tools available to this program
 load_file("celltem.hoc")
 
+fEsimp  = 0	// 1 = single cpt Ecell; 0 = 5 cpt Ecell
+
 // Tort/Kopell
 //nO = 5	// number of O (OLM) cells
 //nI = 5	// number of I (BC) cells
@@ -78,6 +80,7 @@ EIconv = nE
 EOconv = nE
 // Cell convergence (numbers of cells) onto target (Orban)
 OIconv = 5
+//OEconv = 0
 OEconv = 8
 IOconv = 0
 //IOconv = 5
@@ -135,15 +138,21 @@ for(i=0; i<nI; i=i+1)	{
 }
 
 for(i=0; i<nE; i=i+1)	{
-		cell = new ECell()	
+		if (fEsimp == 1) {cell = new ECell()} else {cell = new ECell5()}
 		Ecell.append(cell)
 		cell.soma eapc[i] = new APCount(0.5)
 		cell.soma.v = r.repick()
-		cell.soma			{
-			drive_Ecellchann = r4.repick()	
-			//drive_Ecellchann = Edrive
-			v = r.repick() 
-			}
+		if (fEsimp == 1) {
+			cell.soma			{
+				drive_Ecellchann = r4.repick()	
+				//drive_Ecellchann = Edrive
+				}
+		} else {
+			cell.soma			{
+				drive_Ecell5chann = r4.repick()	
+				//drive_Ecell5chann = Edrive
+				}
+		}
 }
 							
 
