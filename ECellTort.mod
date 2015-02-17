@@ -2,6 +2,7 @@ TITLE ECell5Chann
 : Cell model from  Migliore (2004)
 : Programmed by Adriano Tort, CBD, BU, 2008
 : Reproduced from PNAS SI by B. Graham 16-2-15
+: (does not seem numerically sound BPG 17-2-15)
 
 UNITS {
         (mA) = (milliamp)
@@ -39,6 +40,7 @@ PARAMETER {
         imin = 10
         nmin = 2
         amin = 0.1
+        bmin = 2
         v50 = -82		(mV)
         bk = 0.8
         ck = 4
@@ -142,7 +144,7 @@ UNITSOFF
 	alpha = exp(0.45*(v+66))
   	beta =  exp(0.09*(v+66))
 	iinf = (1+bk*exp((v+60)/2))/(1+exp((v+60)/2))
-	itau = 3000*beta/(alpha+1)
+	itau = 30000*beta/(alpha+1)
         if (itau<imin) {itau=imin}
 	
 	alpha = exp(-0.11*(v-13))
@@ -156,6 +158,10 @@ UNITSOFF
 	ainf=1/(alpha+1)
 	atau = ck*beta/(alpha+1)
         if (atau<amin) {atau=amin}
+
+	binf=1/(exp(0.11*(v+56))+1)
+	btau = 0.26*(v+50)
+        if (btau<bmin) {btau=bmin}
 
 	rinf = 1/(1+exp((v-v50)/10.5))
 	rtau = 1/(exp(-14.59-0.086*v)+exp(-1.87+0.0701*v))

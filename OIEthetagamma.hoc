@@ -6,8 +6,9 @@
 
 load_file("nrngui.hoc") // make graphical interface tools available to this program
 load_file("celltem.hoc")
+load_file("CA1PC5.hoc")
 
-fEsimp  = 0	// 1 = single cpt Ecell; 0 = 5 cpt Ecell
+fEmodel = 2	// 0 = single cpt Ecell; 1 = 5 cpt Tort; 2 = 5 cpt CA1 PC
 
 // Tort/Kopell
 //nO = 5	// number of O (OLM) cells
@@ -38,8 +39,10 @@ Estd=0.0
 Idrive=0.0008
 Odrive=-0.003
 Ostd=0.00007
-Edrive=0.0008
-Estd=0.00007
+//Edrive=0.0008
+//Estd=0.00007
+Edrive=0.008	// CA1PC5 model
+Estd=0.0001
 
 // Noise specifications
 // uniform range for initial membrane voltage (Tort/Kopell)
@@ -58,6 +61,14 @@ IOstrength = 0.0005
 IIstrength = 0.0001
 IEstrength = 0.0001
 OEstrength = 0.00015
+EIstrength = 0.00005
+EOstrength = 0.00001
+// Connection strengths (Orban with CA1PC5)
+OIstrength = 0.0002
+IOstrength = 0.0005
+IIstrength = 0.0001
+IEstrength = 0.001	// CA1PC5
+OEstrength = 0.0015	// CA1PC5
 EIstrength = 0.00005
 EOstrength = 0.00001
 
@@ -138,19 +149,31 @@ for(i=0; i<nI; i=i+1)	{
 }
 
 for(i=0; i<nE; i=i+1)	{
-		if (fEsimp == 1) {cell = new ECell()} else {cell = new ECell5()}
+		if (fEmodel == 0) {cell = new ECell()}
+		if (fEmodel == 1) {cell = new ECell5()}
+		if (fEmodel == 2) {
+			cell = new PCell5()
+			cell.soma insert Celldrive
+		}
 		Ecell.append(cell)
 		cell.soma eapc[i] = new APCount(0.5)
 		cell.soma.v = r.repick()
-		if (fEsimp == 1) {
-			cell.soma			{
+		if (fEmodel == 0) {
+			cell.soma {
 				drive_Ecellchann = r4.repick()	
 				//drive_Ecellchann = Edrive
 				}
-		} else {
-			cell.soma			{
+		} 
+		if (fEmodel == 1) {
+			cell.soma {
 				drive_Ecell5chann = r4.repick()	
 				//drive_Ecell5chann = Edrive
+				}
+		}
+		if (fEmodel == 2) {
+			cell.soma {
+				drive_Celldrive = r4.repick()	
+				//drive_Celldrive = Edrive
 				}
 		}
 }

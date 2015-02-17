@@ -1,0 +1,138 @@
+{load_file("nrngui.hoc")}
+objectvar save_window_, rvp_
+objectvar scene_vector_[5]
+objectvar ocbox_, ocbox_list_, scene_, scene_list_
+{ocbox_list_ = new List()  scene_list_ = new List()}
+{pwman_place(0,0,0)}
+{
+xpanel("RunControl", 0)
+v_init = -67
+xvalue("Init","v_init", 1,"stdinit()", 1, 1 )
+xbutton("Init & Run","run()")
+xbutton("Stop","stoprun=1")
+runStopAt = 5
+xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 )
+runStopIn = 1
+xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
+xbutton("Single Step","steprun()")
+t = 600
+xvalue("t","t", 2 )
+tstop = 600
+xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
+dt = 0.025
+xvalue("dt","dt", 1,"setdt()", 0, 1 )
+steps_per_ms = 40
+xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )
+screen_update_invl = 0.05
+xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
+realtime = 0.26
+xvalue("Real Time","realtime", 0,"", 0, 1 )
+xpanel(0,121)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,600,-100,50)
+scene_vector_[2] = save_window_
+{save_window_.view(0, -100, 600, 150, 636, 24, 300.6, 157.6)}
+graphList[0].append(save_window_)
+save_window_.save_name("graphList[0].")
+save_window_.addvar("ecell[0].soma.v( 0.5 )", 1, 1, 0.8, 0.9, 2)
+}
+{
+xpanel("IClamp[2] at ECell[0].soma(0.5)", 0)
+xlabel("IClamp[2] at ECell[0].soma(0.5)")
+estim[0].del = 50
+xvalue("del","estim[0].del", 1,"", 0, 1 )
+estim[0].dur = 500
+xvalue("dur","estim[0].dur", 1,"", 0, 1 )
+estim[0].amp = 0
+xvalue("amp","estim[0].amp", 1,"", 0, 1 )
+estim[0].i = 0
+xvalue("i","estim[0].i", 0,"", 0, 1 )
+xpanel(372,24)
+}
+{
+xpanel("IClamp[1] at ICell[0].soma(0.5)", 0)
+xlabel("IClamp[1] at ICell[0].soma(0.5)")
+istim[0].del = 50
+xvalue("del","istim[0].del", 1,"", 0, 1 )
+istim[0].dur = 500
+xvalue("dur","istim[0].dur", 1,"", 0, 1 )
+istim[0].amp = 0
+xvalue("amp","istim[0].amp", 1,"", 0, 1 )
+istim[0].i = 0
+xvalue("i","istim[0].i", 0,"", 0, 1 )
+xpanel(378,331)
+}
+{
+xpanel("IClamp[0] at OCell[0].soma(0.5)", 0)
+xlabel("IClamp[0] at OCell[0].soma(0.5)")
+ostim[0].del = 0
+xvalue("del","ostim[0].del", 1,"", 0, 1 )
+ostim[0].dur = 92.311
+xvalue("dur","ostim[0].dur", 1,"", 0, 1 )
+ostim[0].amp = 0
+xvalue("amp","ostim[0].amp", 1,"", 0, 1 )
+ostim[0].i = 0
+xvalue("i","ostim[0].i", 0,"", 0, 1 )
+xpanel(372,612)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,600,-80,40)
+scene_vector_[3] = save_window_
+{save_window_.view(0, -80, 600, 120, 636, 307, 300.6, 163.9)}
+graphList[0].append(save_window_)
+save_window_.save_name("graphList[0].")
+save_window_.addvar("icell[0].soma.v( 0.5 )", 1, 1, 0.8, 0.9, 2)
+}
+{
+save_window_ = new Graph(0)
+save_window_.size(0,600,-90,60)
+scene_vector_[4] = save_window_
+{save_window_.view(0, -90, 600, 150, 630, 576, 300.6, 168.4)}
+graphList[0].append(save_window_)
+save_window_.save_name("graphList[0].")
+save_window_.addvar("olmcell[0].soma.v( 0.5 )", 1, 1, 0.8, 0.9, 2)
+}
+{
+xpanel("APCount[2] at ECell[0].soma(0.5)", 0)
+xlabel("APCount[2] at ECell[0].soma(0.5)")
+eapc[0].n = 26
+xvalue("n","eapc[0].n", 1,"", 0, 1 )
+eapc[0].thresh = -20
+xvalue("thresh","eapc[0].thresh", 1,"", 0, 1 )
+eapc[0].time = 583.5
+xvalue("time","eapc[0].time", 1,"", 0, 1 )
+eapc[0].firing = 0
+xvalue("firing","eapc[0].firing", 0,"", 0, 1 )
+xpanel(1062,27)
+}
+{
+xpanel("APCount[1] at ICell[0].soma(0.5)", 0)
+xlabel("APCount[1] at ICell[0].soma(0.5)")
+iapc[0].n = 30
+xvalue("n","iapc[0].n", 1,"", 0, 1 )
+iapc[0].thresh = -20
+xvalue("thresh","iapc[0].thresh", 1,"", 0, 1 )
+iapc[0].time = 586.2
+xvalue("time","iapc[0].time", 1,"", 0, 1 )
+iapc[0].firing = 0
+xvalue("firing","iapc[0].firing", 0,"", 0, 1 )
+xpanel(1057,307)
+}
+{
+xpanel("APCount[0] at OCell[0].soma(0.5)", 0)
+xlabel("APCount[0] at OCell[0].soma(0.5)")
+oapc[0].n = 5
+xvalue("n","oapc[0].n", 1,"", 0, 1 )
+oapc[0].thresh = -20
+xvalue("thresh","oapc[0].thresh", 1,"", 0, 1 )
+oapc[0].time = 528.8
+xvalue("time","oapc[0].time", 1,"", 0, 1 )
+oapc[0].firing = 0
+xvalue("firing","oapc[0].firing", 0,"", 0, 1 )
+xpanel(1051,576)
+}
+objectvar scene_vector_[1]
+{doNotify()}

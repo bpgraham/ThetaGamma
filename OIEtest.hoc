@@ -1,0 +1,177 @@
+// Test individual cell types
+// Programmed by BPG 10-2-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("celltem.hoc")
+load_file("CA1PC5.hoc")
+
+nocells = 1
+nicells = 1
+necells = 1
+
+WhiteNoise=0
+v_init=-67
+tstop=600
+syntime=500
+marksize = 6
+
+alpha_Esyn=1/0.1
+beta_Esyn=1/3
+alpha_Isyn=1/0.3
+beta_Isyn=1/9
+alpha_OLMsyn=1/0.2
+beta_OLMsyn=1/20
+
+Idrive=0.0008
+Odrive=-0.003
+Edrive=0.001
+Edrive=0.006	// CA1PC5 model
+//Idrive=0.0
+//Odrive=0.0
+//Edrive=0.0
+
+odelay = 0
+idelay = 0
+edelay = 0
+
+Vg_leak = 0.00005
+Ve_leak = -70
+Vg_nacurrentolmolm = 0.03
+Ve_nacurrentolmolm = 90
+Vg_kcurrentolm = 0.023
+Ve_kcurrentolm = -100
+Vg_acurrentolm = 0.016
+Ve_acurrentolm = -90
+Vg_hcurrentolm = 0.012
+Ve_hcurrentolm = -32.9
+Vv50_hcurrentolm = -84
+
+Vgl_icellchann = 0.0001
+Vel_icellchann = -65
+Vgna_icellchann = 0.035
+Vena_icellchann = 55
+Vgk_icellchann = 0.009
+Vek_icellchann = -90
+
+// CELLS
+objectvar olmcell[nocells]
+objectvar icell[nicells]
+objectvar ecell[necells]
+
+// SYNAPSES
+objectvar oosyn[nocells][nocells]
+objectvar iisyn[nicells][nicells]
+objectvar iosyn[nicells][nocells]
+objectvar oisyn[nocells][nicells]
+objectvar oesyn[nocells][necells]
+objectvar iesyn[nicells][necells]
+objectvar eosyn[necells][nocells]
+objectvar eisyn[necells][nicells]
+objectvar eesyn[necells][necells]
+
+// RECORDING AND STIMULATION
+objectvar oapc[nocells], iapc[nicells], eapc[necells]
+objectvar ostim[nocells], istim[nicells], estim[necells]
+objref tvec
+
+// RANDOM NUMBER GENERATORS
+objref r,r2,r3,r4,r5,r6
+r = new Random()
+r2 = new Random()
+r3 = new Random()
+r4 = new Random()
+r2.normal(0,WhiteNoise)
+r4.uniform(0,syntime)
+
+// CREATING CELLS
+// initial voltage values uniformed distributed in (A,B):
+A=-80
+B=-60
+
+for(i=0; i<nocells; i=i+1)	{
+		olmcell[i] = new OCell()
+		olmcell[i].soma oapc[i] = new APCount(0.5)
+		olmcell[i].soma			{
+			gl_Ocellchann = Vg_leak
+			el_Ocellchann = Ve_leak
+			gna_Ocellchann = Vg_nacurrentolmolm 
+			ena_Ocellchann = Ve_nacurrentolmolm 
+			gk_Ocellchann = Vg_kcurrentolm
+			ek_Ocellchann = Ve_kcurrentolm
+			ga_Ocellchann = Vg_acurrentolm 
+			ea_Ocellchann = Ve_acurrentolm 
+			gh_Ocellchann = Vg_hcurrentolm
+			eh_Ocellchann = Ve_hcurrentolm
+			v50_Ocellchann = Vv50_hcurrentolm
+			// drive_Ocellchann = r.uniform(omin,omax)
+			// drive_Ocellchann = r.normal(omin,omax^2)	
+			drive_Ocellchann= Odrive
+
+			v = r.uniform(A,B) 
+			}
+	//	r6.play(&olmcell[i][j].soma.drivenoise_Ocellchann)
+}
+ 
+for(i=0; i<nicells; i=i+1)	{
+		icell[i] = new ICell()
+		icell[i].soma iapc[i] = new APCount(0.5)
+		icell[i].soma			{
+			gl_Icellchann = Vgl_icellchann
+			el_Icellchann = Vel_icellchann
+			gna_Icellchann = Vgna_icellchann 
+			ena_Icellchann = Vena_icellchann
+			gk_Icellchann =  Vgk_icellchann
+			ek_Icellchann = Vek_icellchann
+			drive_Icellchann = Idrive
+			v = r.uniform(A,B)
+			}
+	//	r5.play(&icell[i][j].soma.drivenoise_Icellchann)
+}
+
+for(i=0; i<necells; i=i+1)	{
+		//ecell[i] = new ECell()	
+		//ecell[i] = new ECell5()	
+		ecell[i] = new PCell5()	
+		ecell[i].soma eapc[i] = new APCount(0.5)
+		//ecell[i].soma.v = r.uniform(A,B)
+		ecell[i].soma	{
+			//drive_Ecellchann = Edrive
+			//drive_Ecell5chann = Edrive
+			insert Celldrive 
+			drive_Celldrive = Edrive
+			}
+		//ecell[i].soma { gna_Ecell5chann=0.032 gk_Ecell5chann=0 .01
+		//	gh_Ecell5chann=0 gA_Ecell5chann=0
+		//}
+	//	r2.play(&ecell[i][j].soma.drivenoise_Ecellchann)
+}
+							
+
+// SETTING INITIAL PHASE SHIFT  (ie, random initial conditions in each trial, in addition to random intital v)
+for(i=0; i<nocells; i=i+1)	{
+		ostim[i] = new IClamp()
+		olmcell[i].soma ostim[i].loc(0.5)
+		ostim[i].del = 0
+		ostim[i].dur = r4.uniform(0,syntime/2)
+		ostim[i].amp =  r4.normal(0.002,(0.0002)^2)
+}
+
+for(i=0; i<nicells; i=i+1)	{
+		istim[i] = new IClamp()
+		icell[i].soma istim[i].loc(0.5)
+		istim[i].del = 0
+		istim[i].dur = r4.uniform(0,syntime/2)
+		istim[i].amp = r4.normal(0.002,(0.0002)^2)
+}
+
+for(i=0; i<necells; i=i+1) {	
+		estim[i] = new IClamp()
+		ecell[i].soma estim[i].loc(0.5)
+		estim[i].del = 0
+		estim[i].dur = r4.uniform(0,syntime/2)
+		estim[i].amp = r4.normal(0.002,(0.0002)^2)
+}
+
+
+load_file("OIEtest.ses")
+

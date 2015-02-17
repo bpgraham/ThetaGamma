@@ -1,0 +1,32 @@
+// Test individual cell types
+// Programmed by BPG 10-2-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("celltem.hoc")
+load_file("CA1PC5.hoc")
+
+Cdrive=0.01	// drive current
+
+// Example drive currents
+Idrive=0.0008
+Odrive=-0.003
+Edrive=0.0008
+Edrive=0.01	// CA1PC5 model
+
+// CELL
+objectvar cell
+
+//cell = new ECell()
+//cell = new ECell5()
+cell = new PCell5()
+
+cell.soma	{
+	//drive_Ecellchann = Cdrive
+	//drive_Ecell5chann = Cdrive
+	insert Celldrive drive_Celldrive = Cdrive
+}
+
+access cell.soma
+
+load_file("Celltest.ses")
+

@@ -113,6 +113,8 @@ extern int nrn_get_mechtype();
  /* declare global and static user variables */
 #define amin amin_Ecell5chann
  double amin = 0.1;
+#define bmin bmin_Ecell5chann
+ double bmin = 2;
 #define eh eh_Ecell5chann
  double eh = -30;
 #define eA eA_Ecell5chann
@@ -188,6 +190,7 @@ extern int nrn_get_mechtype();
  "imin_Ecell5chann", &imin_Ecell5chann,
  "nmin_Ecell5chann", &nmin_Ecell5chann,
  "amin_Ecell5chann", &amin_Ecell5chann,
+ "bmin_Ecell5chann", &bmin_Ecell5chann,
  0,0
 };
  static DoubVec hoc_vdoub[] = {
@@ -348,7 +351,7 @@ static int  rates ( _p, _ppvar, _thread, _nt, _lv ) double* _p; Datum* _ppvar; D
    _lalpha = exp ( 0.45 * ( _lv + 66.0 ) ) ;
    _lbeta = exp ( 0.09 * ( _lv + 66.0 ) ) ;
    iinf = ( 1.0 + bk * exp ( ( _lv + 60.0 ) / 2.0 ) ) / ( 1.0 + exp ( ( _lv + 60.0 ) / 2.0 ) ) ;
-   itau = 3000.0 * _lbeta / ( _lalpha + 1.0 ) ;
+   itau = 30000.0 * _lbeta / ( _lalpha + 1.0 ) ;
    if ( itau < imin ) {
      itau = imin ;
      }
@@ -365,6 +368,11 @@ static int  rates ( _p, _ppvar, _thread, _nt, _lv ) double* _p; Datum* _ppvar; D
    atau = ck * _lbeta / ( _lalpha + 1.0 ) ;
    if ( atau < amin ) {
      atau = amin ;
+     }
+   binf = 1.0 / ( exp ( 0.11 * ( _lv + 56.0 ) ) + 1.0 ) ;
+   btau = 0.26 * ( _lv + 50.0 ) ;
+   if ( btau < bmin ) {
+     btau = bmin ;
      }
    rinf = 1.0 / ( 1.0 + exp ( ( _lv - v50 ) / 10.5 ) ) ;
    rtau = 1.0 / ( exp ( - 14.59 - 0.086 * _lv ) + exp ( - 1.87 + 0.0701 * _lv ) ) ;

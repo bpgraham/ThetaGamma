@@ -9,6 +9,11 @@ objref pre_list
 create soma, Adend[3], Bdend
 
 proc init() {
+	connect Bdend(0), soma(0)
+	connect Adend[0](0), soma(1)
+	connect Adend[1](0), Adend[0](1)
+	connect Adend[2](0), Adend[1](1)
+
 	soma {L = 20 diam = 20}
 	Bdend {L = 200 diam = 2}
 	Adend[0] {L = 150 diam = 2}
