@@ -35,13 +35,11 @@ Odrive=-0.003
 Ostd=0.0
 Edrive=0.0008
 Estd=0.0
-// Orban (adjusted for smaller cells)
-Idrive=0.0008
-Odrive=-0.003
+// Orban (with CA1PC5 model)
+Idrive=0.0012	// 71 Hz
+Odrive=-0.006	// 6 Hz
 Ostd=0.00007
-//Edrive=0.0008
-//Estd=0.00007
-Edrive=0.008	// CA1PC5 model
+Edrive=0.008	// 35 Hz
 Estd=0.0001
 
 // Noise specifications
@@ -64,13 +62,16 @@ OEstrength = 0.00015
 EIstrength = 0.00005
 EOstrength = 0.00001
 // Connection strengths (Orban with CA1PC5)
-OIstrength = 0.0002
-IOstrength = 0.0005
-IIstrength = 0.0001
-IEstrength = 0.001	// CA1PC5
-OEstrength = 0.0015	// CA1PC5
-EIstrength = 0.00005
-EOstrength = 0.00001
+//OIstrength = 0.001
+OIstrength = 0.0005
+IOstrength = 0.0
+IIstrength = 0.00025
+//IEstrength = 0.001
+IEstrength = 0.005
+OEstrength = 0.001
+EIstrength = 0.001
+//EOstrength = 0.0001
+EOstrength = 0.0002
 
 // Connection delays
 OIdelay = 0
@@ -244,8 +245,8 @@ proc connectcells() {local i, j, nsyn, r  localobj syn, nc, u
 }
 
 
-connectcells(Ecell, Icell, EIconv, 0, 1, EIdelay, EIweight)
-connectcells(Ecell, Ocell, EOconv, 0, 1, EOdelay, EOweight)
+connectcells(Ecell, Icell, EIconv, 0, 0, EIdelay, EIweight)	// AMPA only
+connectcells(Ecell, Ocell, EOconv, 0, 1, EOdelay, EOweight)	// AMPA+NMDA
 connectcells(Icell, Icell, IIconv, 2, 2, IIdelay, IIweight)
 connectcells(Icell, Ocell, IOconv, 2, 2, IOdelay, IOweight)
 connectcells(Icell, Ecell, IEconv, 2, 2, IEdelay, IEweight)

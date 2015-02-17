@@ -288,8 +288,8 @@ proc synapses() {
     	syn_.tau1 = 0.5
     	syn_.tau2 = 10
     	syn_.e = -80
-	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: OLM-GABAA
-	//soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 2: OLM-GABAA
+	//soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 3: OLM-GABAA
+	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 3: OLM-GABAA
     	syn_.tau1 = 0.5
     	syn_.tau2 = 20
     	syn_.e = -80

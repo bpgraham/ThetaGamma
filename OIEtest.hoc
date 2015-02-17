@@ -25,9 +25,9 @@ beta_OLMsyn=1/20
 Idrive=0.0008
 Odrive=-0.003
 Edrive=0.001
-Edrive=0.006	// CA1PC5 model
-//Idrive=0.0
-//Odrive=0.0
+Edrive=0.008 // CA1PC5 model
+Idrive=0.0012
+Odrive=-0.006
 //Edrive=0.0
 
 odelay = 0
