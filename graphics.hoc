@@ -37,6 +37,7 @@ proc preprasterplot() {
 DT = 1	// record time every 1 ms
 HW = 5	// 5 ms bins for spike histograms
 STH = 500	// start time for binning
+ENDT = 1000
 fTH = 1	// accumulate spikes for a theta cycle
 theta = 150	// ms (5 Hz)
 
@@ -114,20 +115,30 @@ proc showhist(){local i
 	
 	if (fTH == 1) {
 		STH = 0
+		ENDT = theta
 		// calculate theta period as time between one pair of O cell spikes
 		thsize = spikes2.object(0).size()
 		//theta = spiket2.x[thsize-1] - spiket2.x[thsize-2]
 		spiket.apply("mod")
 		spiket2.apply("mod")
 		spiket3.apply("mod")
-	} 
 	
-	sphist3 = spiket3.histogram(STH, t, HW)		// E
-	sphist = spiket.histogram(STH, t, HW)		// I
-	sphist2 = spiket2.histogram(STH, t, HW)		// O
+		sphist3 = spiket3.histogram(STH, theta, HW)		// E
+		sphist = spiket.histogram(STH, theta, HW)		// I
+		sphist2 = spiket2.histogram(STH, theta, HW)		// O
 	
-	thist = new Vector(sphist.size())
-	thist.indgen(STH, HW)
+		thist = new Vector(sphist.size())
+		thist.indgen(STH, HW)
+	} else {
+		STH = 500
+		ENDT = t
+		sphist3 = spiket3.histogram(STH, t, HW)		// E
+		sphist = spiket.histogram(STH, t, HW)		// I
+		sphist2 = spiket2.histogram(STH, t, HW)		// O
+	
+		thist = new Vector(sphist.size())
+		thist.indgen(STH, HW)
+	}
 	
 	sphist.plot(ghist, thist)
 	sphist2.plot(ghist2, thist)
@@ -136,10 +147,10 @@ proc showhist(){local i
 	vboxh = new VBox()
 	vboxh.intercept(1)	//all following creations go into the "vbox" box
 
-	ghist.label(t-100, sphist3.max()-10, "E")
-	ghist3.view(STH, 0, t, sphist3.max(), 200, 0, 500, 200)
-	ghist.view(STH, 0, t, sphist.max(), 200, 200, 500, 200)
-	ghist2.view(STH, 0, t, sphist2.max(), 200, 400, 500, 200)
+	ghist.label(ENDT-(ENDT/10), sphist3.max()-10, "E")
+	ghist3.view(STH, 0, ENDT, sphist3.max(), 200, 0, 500, 200)
+	ghist.view(STH, 0, ENDT, sphist.max(), 200, 200, 500, 200)
+	ghist2.view(STH, 0, ENDT, sphist2.max(), 200, 400, 500, 200)
 	
 	vboxh.intercept(0)	//ends intercept mode
 	vboxh.map("Spike histograms", 200, 200, 500, 600)	//draw the box and its contents
