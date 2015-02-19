@@ -2,6 +2,8 @@
 // Can generate theta with nested gamma.
 // Based on the models of Orban (2006) and Tort/Kopell (2007).
 // Some cell code from ModelDB accession 138421 (Kopell book chapter).
+// New 5-cpt PC model based on Tort, but using ion channels and distributions
+// from my Migliore-adapted PC model from Neural Computation (2014) paper.
 // Programmed by BPG 10-2-15
 
 load_file("nrngui.hoc") // make graphical interface tools available to this program
@@ -11,20 +13,26 @@ load_file("CA1PC5.hoc")
 fEmodel = 2	// 0 = single cpt Ecell; 1 = 5 cpt Tort; 2 = 5 cpt CA1 PC
 
 // Tort/Kopell
-//nO = 5	// number of O (OLM) cells
-//nI = 5	// number of I (BC) cells
-//nE = 1	// number of E (PC) cells
-
+nO = 5	// number of O (OLM) cells
+nI = 5	// number of I (BC) cells
+nE = 1	// number of E (PC) cells
 // Orban
+nO = 70	// number of O (OLM) cells
+nI = 100	// number of I (BC) cells
+nE = 15	// number of E (PC) cells
+// NETWORK IN USE
 nO = 70	// number of O (OLM) cells
 nI = 100	// number of I (BC) cells
 nE = 15	// number of E (PC) cells
 
 // RANDOM NUMBER GENERATORS
-objref r,r1,r2,r3,r4
+objref r,r1,r2,r2E,r2O,r2I,r3,r4
 r = new Random()	// start each with a different seed
 r1 = new Random(1)
 r2 = new Random(2)
+r2E = new Random(20)
+r2O = new Random(21)
+r2I = new Random(22)
 r3 = new Random(3)
 r4 = new Random(4)
 
@@ -38,8 +46,16 @@ Estd=0.0
 // Orban (with CA1PC5 model)
 Idrive=0.0012	// 71 Hz
 Odrive=-0.006	// 6 Hz
-Ostd=0.00007
+//Ostd=0.00007
 Edrive=0.008	// 35 Hz
+//Estd=0.0001
+// DRIVE IN USE
+Idrive=0.0008	// mA/cm2
+Odrive=-0.003
+//Ostd=0.0
+Ostd=0.00007
+Edrive=0.008
+//Estd=0.0
 Estd=0.0001
 
 // Noise specifications
@@ -47,13 +63,26 @@ Estd=0.0001
 r.uniform(-80,-60)
 // phase disturbing initial current injection (Tort/Kopell)
 r1.uniform(0,250)	// duration
-r2.normal(0.002,(0.0002)^2)	// amplitude (nA)
+Emean = 0.1	// nA for IClamp
+Omean = 0.01
+Imean = 0.002
+//r2.normal(0.002,(0.0002)^2)	// amplitude (nA)
+r2E.normal(Emean,(Emean/10)^2)	// amplitude (nA)
+r2O.normal(Omean,(Omean/10)^2)	// amplitude (nA)
+r2I.normal(Imean,(Imean/10)^2)	// amplitude (nA)
 // drive current variation (O and E cells: Orban)
 r3.normal(Odrive,Ostd^2)	
 r4.normal(Edrive,Estd^2)	
 
-
-// Connection strengths
+// Connection strengths (ZERO)
+OIstrength = 0.0
+IOstrength = 0.0
+IIstrength = 0.0
+IEstrength = 0.0
+OEstrength = 0.0
+EIstrength = 0.0
+EOstrength = 0.0
+// Connection strengths (Tort)
 OIstrength = 0.0002
 IOstrength = 0.0005
 IIstrength = 0.0001
@@ -72,6 +101,14 @@ OEstrength = 0.001
 EIstrength = 0.001
 //EOstrength = 0.0001
 EOstrength = 0.0002
+// CONNECTION STRENGTHS IN USE
+OIstrength = 0.0002
+IOstrength = 0.0005
+IIstrength = 0.0001
+IEstrength = 0.005
+OEstrength = 0.001
+EIstrength = 0.00005
+EOstrength = 0.00001
 
 // Connection delays
 OIdelay = 0
@@ -92,7 +129,6 @@ EIconv = nE
 EOconv = nE
 // Cell convergence (numbers of cells) onto target (Orban)
 OIconv = 5
-//OEconv = 0
 OEconv = 8
 IOconv = 0
 //IOconv = 5
@@ -100,6 +136,14 @@ IIconv = 60
 IEconv = 20
 EIconv = 0
 //EIconv = 5
+EOconv = 5
+// CELL CONVERGENCE IN USE
+OIconv = 5
+OEconv = 8
+IOconv = 5
+IIconv = 60
+IEconv = 20
+EIconv = 5
 EOconv = 5
 
 // Final individual connection weights
@@ -186,7 +230,7 @@ for(i=0; i<nO; i=i+1)	{
 		Ocell.object(i).soma ostim[i].loc(0.5)
 		ostim[i].del = 0
 		ostim[i].dur = r1.repick()
-		ostim[i].amp =  r2.repick()
+		ostim[i].amp = r2O.repick()
 }
 
 for(i=0; i<nI; i=i+1)	{
@@ -194,7 +238,7 @@ for(i=0; i<nI; i=i+1)	{
 		Icell.object(i).soma istim[i].loc(0.5)
 		istim[i].del = 0
 		istim[i].dur = r1.repick()
-		istim[i].amp = r2.repick()
+		istim[i].amp = r2I.repick()
 }
 
 for(i=0; i<nE; i=i+1) {	
@@ -202,7 +246,7 @@ for(i=0; i<nE; i=i+1) {
 		Ecell.object(i).soma estim[i].loc(0.5)
 		estim[i].del = 0
 		estim[i].dur = r1.repick()
-		estim[i].amp = r2.repick()
+		estim[i].amp = r2E.repick()
 }
 
 

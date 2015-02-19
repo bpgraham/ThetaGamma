@@ -37,6 +37,8 @@ proc preprasterplot() {
 DT = 1	// record time every 1 ms
 HW = 5	// 5 ms bins for spike histograms
 STH = 500	// start time for binning
+fTH = 1	// accumulate spikes for a theta cycle
+theta = 150	// ms (5 Hz)
 
 access Ecell.object(0).soma // by some reason it is only possible to record "t" when a section is accessed
 tvec = new Vector()
@@ -47,7 +49,7 @@ preprasterplot()
 brusher=4
 marksize=6
 // for large net (small, thin marks)
-brusher=1
+brusher=2
 marksize=1
 
 // Raster plot of spike times
@@ -61,13 +63,13 @@ proc showraster(){local i
 	for i = 0,nI-1 {
 		spikey = new Vector()
 		spikey = spikes.object(i).c //creates a vector of size as the i-th vector in the list
-		spikey.fill(i+1) // fill all entries with the number i+1
+		spikey.fill(nO+i+1) // fill all entries with the number i+1
 		spikey.mark(graster, spikes.object(i), "|", marksize, 2, brusher)
 	}
 	for i = 0,nO-1 {
 		spikey2 = new Vector()
 		spikey2 = spikes2.object(i).c //creates a vector of size as the i-th vector in the list
-		spikey2.fill(nI+i+1) // fill all entries with the number i+1
+		spikey2.fill(i+1) // fill all entries with the number i+1
 		spikey2.mark(graster, spikes2.object(i), "|", marksize, 3, brusher)
 	}
 	for i = 0,nE-1 {
@@ -81,6 +83,9 @@ proc showraster(){local i
 				
 }
 
+func mod() {
+	return $1%theta
+}
 
 // Histogram of spike times
 proc showhist(){local i
@@ -106,10 +111,20 @@ proc showhist(){local i
 	for i = 0,nE-1 {
 		spiket3.append(spikes3.object(i)) // accumulate spikes from all cells
 	}
-
-	sphist = spiket.histogram(STH, t, HW)
-	sphist2 = spiket2.histogram(STH, t, HW)
-	sphist3 = spiket3.histogram(STH, t, HW)
+	
+	if (fTH == 1) {
+		STH = 0
+		// calculate theta period as time between one pair of O cell spikes
+		thsize = spikes2.object(0).size()
+		//theta = spiket2.x[thsize-1] - spiket2.x[thsize-2]
+		spiket.apply("mod")
+		spiket2.apply("mod")
+		spiket3.apply("mod")
+	} 
+	
+	sphist3 = spiket3.histogram(STH, t, HW)		// E
+	sphist = spiket.histogram(STH, t, HW)		// I
+	sphist2 = spiket2.histogram(STH, t, HW)		// O
 	
 	thist = new Vector(sphist.size())
 	thist.indgen(STH, HW)
@@ -121,9 +136,10 @@ proc showhist(){local i
 	vboxh = new VBox()
 	vboxh.intercept(1)	//all following creations go into the "vbox" box
 
-	ghist.view(STH, 0, t, sphist.max(), 200, 0, 500, 200)
-	ghist2.view(STH, 0, t, sphist2.max(), 200, 200, 500, 200)
-	ghist3.view(STH, 0, t, sphist3.max(), 200, 400, 500, 200)
+	ghist.label(t-100, sphist3.max()-10, "E")
+	ghist3.view(STH, 0, t, sphist3.max(), 200, 0, 500, 200)
+	ghist.view(STH, 0, t, sphist.max(), 200, 200, 500, 200)
+	ghist2.view(STH, 0, t, sphist2.max(), 200, 400, 500, 200)
 	
 	vboxh.intercept(0)	//ends intercept mode
 	vboxh.map("Spike histograms", 200, 200, 500, 600)	//draw the box and its contents
