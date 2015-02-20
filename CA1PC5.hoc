@@ -122,6 +122,7 @@ proc init() {
 	caR_init = 0.0
 	sAHP_init = 0.0
 	mAHP_init = 0.0
+	//ghd=0.0
 
 
 	//forsec axon_list {insert pas e_pas=Vrest g_pas = 1/RmAx Ra=RaAx cm=CmAx}

@@ -102,10 +102,17 @@ OEstrength = 0.001
 EIstrength = 0.001
 //EOstrength = 0.0001
 EOstrength = 0.0002
+// Control
+OIstrength = 0.0002
+IOstrength = 0.0005
+IIstrength = 0.0001
+IEstrength = 0.005
+OEstrength = 0.001
+EIstrength = 0.00005
+EOstrength = 0.00001
 // CONNECTION STRENGTHS IN USE
 OIstrength = 0.0002
 IOstrength = 0.0005
-//IOstrength = 0.0
 IIstrength = 0.0001
 IEstrength = 0.005
 OEstrength = 0.001

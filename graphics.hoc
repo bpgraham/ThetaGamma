@@ -279,5 +279,5 @@ preprasterplot()
 recordV()
 
 load_file("OIEthetagamma.ses")
-createGUI()
+//createGUI()
 
