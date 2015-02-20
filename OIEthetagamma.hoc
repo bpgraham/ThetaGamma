@@ -27,7 +27,8 @@ nE = 15	// number of E (PC) cells
 
 // RANDOM NUMBER GENERATORS
 objref r,r1,r2,r2E,r2O,r2I,r3,r4
-r = new Random()	// start each with a different seed
+//r = new Random()	// start each with a different seed
+r = new Random(0)	// start each with a different seed
 r1 = new Random(1)
 r2 = new Random(2)
 r2E = new Random(20)
@@ -103,8 +104,8 @@ EIstrength = 0.001
 EOstrength = 0.0002
 // CONNECTION STRENGTHS IN USE
 OIstrength = 0.0002
-//IOstrength = 0.0005
-IOstrength = 0.0
+IOstrength = 0.0005
+//IOstrength = 0.0
 IIstrength = 0.0001
 IEstrength = 0.005
 OEstrength = 0.001

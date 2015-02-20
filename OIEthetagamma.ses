@@ -1,6 +1,6 @@
 {load_file("nrngui.hoc")}
 objectvar save_window_, rvp_
-objectvar scene_vector_[7]
+objectvar scene_vector_[5]
 objectvar ocbox_, ocbox_list_, scene_, scene_list_
 {ocbox_list_ = new List()  scene_list_ = new List()}
 {pwman_place(0,0,0)}
@@ -15,7 +15,7 @@ xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 
 runStopIn = 1
 xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
 xbutton("Single Step","steprun()")
-t = 4000
+t = 124.65
 xvalue("t","t", 2 )
 tstop = 4000
 xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
@@ -25,15 +25,15 @@ steps_per_ms = 40
 xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )
 screen_update_invl = 0.05
 xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
-realtime = 10.11
+realtime = 21.59
 xvalue("Real Time","realtime", 0,"", 0, 1 )
-xpanel(2,126)
+xpanel(0,126)
 }
 {
 save_window_ = new Graph(0)
 save_window_.size(0,4000,-80,40)
 scene_vector_[2] = save_window_
-{save_window_.view(0, -80, 4000, 120, 366, 12, 602.1, 188.2)}
+{save_window_.view(0, -80, 4000, 120, 553, 8, 602.1, 188.2)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
@@ -42,7 +42,7 @@ save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
 save_window_ = new Graph(0)
 save_window_.size(0,4000,-80,40)
 scene_vector_[3] = save_window_
-{save_window_.view(0, -80, 4000, 120, 366, 300, 599.4, 144.1)}
+{save_window_.view(0, -80, 4000, 120, 558, 324, 599.4, 144.1)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("Icell.object(1).soma.v(0.5)", 1, 1, 0.8, 0.9, 2)
@@ -51,16 +51,33 @@ save_window_.addexpr("Icell.object(1).soma.v(0.5)", 1, 1, 0.8, 0.9, 2)
 save_window_ = new Graph(0)
 save_window_.size(0,4000,-80,40)
 scene_vector_[4] = save_window_
-{save_window_.view(0, -80, 4000, 120, 366, 536, 598.5, 159.4)}
+{save_window_.view(0, -80, 4000, 120, 559, 552, 598.5, 159.4)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("Ocell.object(1).soma.v(0.5)", 1, 1, 0.8, 0.9, 2)
 }
 {
-xpanel("Graphics", 0)
+xpanel("GUI", 0)
+xlabel("Graphics")
 xbutton("Raster plot","showraster()")
+STH = 500
+xvalue("Start binning (ms)","STH", 0,"", 0, 0 )
+ENDT = 1000
+xvalue("End binning (ms)","ENDT", 0,"", 0, 0 )
+HW = 5
+xvalue("Bin width (ms)","HW", 0,"", 0, 0 )
+xstatebutton("Theta histogram?",&fTH,"")
+theta = 150
+xvalue("Theta period (ms)","theta", 0,"", 0, 0 )
 xbutton("Spike histograms","showhist()")
-xpanel(64,576)
+xlabel("Data output")
+expdate = 200215
+xvalue("Date (ddmmyy)","expdate", 0,"", 0, 0 )
+exprun = 1
+xvalue("Experiment run","exprun", 0,"", 0, 0 )
+xbutton("Store voltage traces","storeVall()")
+xbutton("Store spike times","storespikesall()")
+xpanel(294,118)
 }
 objectvar scene_vector_[1]
 {doNotify()}
