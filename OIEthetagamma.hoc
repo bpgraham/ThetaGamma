@@ -102,7 +102,7 @@ OEstrength = 0.001
 EIstrength = 0.001
 //EOstrength = 0.0001
 EOstrength = 0.0002
-// Control
+// CONTROL
 OIstrength = 0.0002
 IOstrength = 0.0005
 IIstrength = 0.0001
@@ -110,7 +110,7 @@ IEstrength = 0.005
 OEstrength = 0.001
 EIstrength = 0.00005
 EOstrength = 0.00001
-// CONNECTION STRENGTHS IN USE
+// CONNECTION STRENGTHS IN USE (uS)
 OIstrength = 0.0002
 IOstrength = 0.0005
 IIstrength = 0.0001
@@ -145,6 +145,14 @@ IIconv = 60
 IEconv = 20
 EIconv = 0
 //EIconv = 5
+EOconv = 5
+// CONTROL
+OIconv = 5
+OEconv = 8
+IOconv = 5
+IIconv = 60
+IEconv = 20
+EIconv = 5
 EOconv = 5
 // CELL CONVERGENCE IN USE
 OIconv = 5

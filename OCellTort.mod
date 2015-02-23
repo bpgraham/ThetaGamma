@@ -30,11 +30,11 @@ PARAMETER {
         ea= -90			(mV)
         gh= 0.012		(mho/cm2)
         eh= -32.9		(mV)
- 		v50=-84			(mV)
-		gl= 0.00005		(mho/cm2)
+ 	v50=-84			(mV)
+	gl= 0.00005		(mho/cm2)
         el= -70			(mV)
-		drive=-0.003	(mA/cm2)
-		drivenoise =0	(mA/cm2)
+	drive=-0.003	(mA/cm2)
+	drivenoise =0	(mA/cm2)
 }
  
  
