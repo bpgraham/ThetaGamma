@@ -2,6 +2,9 @@
 //   - with minimal set of ion channels and their distributions
 // BPG 20-8-09
 // BPG 17-2-15: reduced 5 cpt geometry
+// BPG 24-2-15: BSC GABAA synapse added to Adend[1]
+// BPG 24-2-15: CA3 AMPA+NMDA synapse added to Adend[1]
+// BPG 24-2-15: EC AMPA+NMDA synapse added to Adend[2]
 
 // Based on Migliore 2005 - passive properties, Na, Kdr, Ka, Ih 
 // and Poirazzi 2003 - IM, calcium currents (L, T, R), mAHP, sAHP
@@ -289,11 +292,30 @@ proc synapses() {
     	syn_.tau1 = 0.5
     	syn_.tau2 = 10
     	syn_.e = -80
-	//soma syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 3: OLM-GABAA
 	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 3: OLM-GABAA
     	syn_.tau1 = 0.5
     	syn_.tau2 = 20
     	syn_.e = -80
+	Adend[1] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 4: BSC-GABAA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 10
+    	syn_.e = -80
+	Adend[1] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 5: AMPA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
+  	Adend[1] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 6: NMDA
+    	syn_.tcon = 2.3	
+    	syn_.tcoff = 100
+    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
+	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 7: AMPA
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
+  	Adend[2] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 8: NMDA
+    	syn_.tcon = 2.3	
+    	syn_.tcoff = 100
+    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
 }
 
 

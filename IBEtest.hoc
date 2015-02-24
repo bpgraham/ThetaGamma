@@ -1,0 +1,89 @@
+// Test theta rhythmic population activity in I-E-B network
+// BPG 24-2-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("celltem.hoc")
+load_file("CA1PC5.hoc")
+
+nB = 10
+nI = 10
+nE = 10
+
+WhiteNoise=0
+Tstop=1000
+
+theta = 6	// Hz
+
+Idrive=0.0008
+Bdrive=0.0008
+Edrive=0.008
+
+Ithdr=0.0008
+
+odelay = 0
+idelay = 0
+edelay = 0
+
+// CELLS
+objectvar bcell[nB]
+objectvar icell[nI]
+objectvar ecell[nE]
+
+// RECORDING AND STIMULATION
+objectvar bapc[nB], iapc[nI], eapc[nE]
+objectvar bstim[nB], istim[nI], estim[nE]
+objectvar btheta[nB], itheta[nI]
+objref tvec
+
+// RANDOM NUMBER GENERATORS
+objref r,r2,r3,r4,r5,r6
+r = new Random()
+r2 = new Random()
+r3 = new Random()
+r4 = new Random()
+//r2.normal(0,WhiteNoise)
+//r4.uniform(0,syntime)
+
+// CREATING CELLS
+ 
+for(i=0; i<nI; i=i+1)	{
+		icell[i] = new ICell()
+		icell[i].soma iapc[i] = new APCount(0.5)
+		icell[i].soma			{
+			drive_Icellchann = 0
+		//	drive_Icellchann = Idrive
+		//	v = r.uniform(A,B)
+			}
+	//	r2.play(&icell[i][j].soma.drivenoise_Icellchann)
+}
+
+for(i=0; i<nE; i=i+1)	{
+		ecell[i] = new PCell5()	
+		ecell[i].soma eapc[i] = new APCount(0.5)
+		ecell[i].soma	{
+			insert Celldrive 
+			drive_Celldrive = Edrive
+			}
+	//	r2.play(&ecell[i][j].soma.drivenoise_Ecellchann)
+}
+							
+
+// SETTING THETA RHYTMIC DRIVE  
+for(i=0; i<nI; i=i+1)	{
+		istim[i] = new IClamp()
+		icell[i].soma istim[i].loc(0.5)
+		istim[i].del = 0
+		istim[i].dur = Tstop
+		// theta rhythm
+		iamp = r3.normal(Ithdr,(Ithdr/10)^2)
+		itheta[i] = new Vector(Tstop)
+		itheta[i].sin(theta, r4.normal(0,(2*PI/10)^2))
+//		itheta[i].sin(theta, 0)
+		itheta[i].add(1)
+		itheta[i].mul(iamp)
+		itheta[i].play(&istim[i].amp, 1)
+}
+
+
+load_file("IBEtest.ses")
+

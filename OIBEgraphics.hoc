@@ -1,0 +1,310 @@
+// GUI and Reporting
+// BPG 24-2-15
+
+//########################################################################
+// RASTER PLOT AND SPIKE HISTOGRAMS
+
+objref vecE, vecI, vecO, vecB, spikesE, spikesI, spikesO, spikesB
+objref graster, vbox, vbox2, hbox
+objref ghistE, ghistI, ghistO, ghistB, vboxh
+objref spiketE, spiketI, spiketO, spiketB, sphistE, sphistI, sphistO, sphistB, thist
+
+DT = 1	// record time every 1 ms
+HW = 5	// 5 ms bins for spike histograms
+STH = 500	// start time for binning
+ENDT = 1000
+fTH = 0	// 1 = accumulate spikes for a theta cycle
+theta = 150	// ms (5 Hz)
+
+if (nE < 10) {
+	// for small net (large, thick marks)
+	brusher=4
+	marksize=6
+} else {
+	// for large net (small, thin marks)
+	brusher=2
+	marksize=1
+}
+
+
+// Set up spike time recordings via APCs
+proc preprasterplot() {
+
+	spikesE = new List()
+	spikesI = new List()
+	spikesB = new List()
+	spikesO = new List()
+
+	for i = 0,nI-1 {
+		vecI = new Vector()
+		iapc[i].record(vecI)
+		spikesI.append(vecI)
+	}
+	for i = 0,nB-1 {
+		vecB = new Vector()
+		bapc[i].record(vecB)
+		spikesB.append(vecB)
+	}
+	for i = 0,nO-1 {
+		vecO = new Vector()
+		oapc[i].record(vecO)
+		spikesO.append(vecO)
+	}
+	for i = 0,nE-1{
+		vecE = new Vector()
+		eapc[i].record(vecE)
+		spikesE.append(vecE)
+	}
+}
+
+
+// Raster plot of spike times
+proc showraster(){local i localobj spikeyE, spikeyI, spikeyO, spikeyB
+
+	graster = new Graph(0) 
+	graster.erase_all()
+	
+	for i = 0,nE-1 {
+		spikeyE = new Vector()
+		spikeyE = spikesE.object(i).c //creates a vector of size as the i-th vector in the list
+		spikeyE.fill(nI+nB+nO+i+1) // fill all entries with the number i+1
+		spikeyE.mark(graster, spikesE.object(i), "|", marksize, 1, brusher)
+	}
+	for i = 0,nI-1 {
+		spikeyI = new Vector()
+		spikeyI = spikesI.object(i).c //creates a vector of size as the i-th vector in the list
+		spikeyI.fill(nO+nB+i+1) // fill all entries with the number i+1
+		spikeyI.mark(graster, spikesI.object(i), "|", marksize, 2, brusher)
+	}
+	for i = 0,nB-1 {
+		spikeyB = new Vector()
+		spikeyB = spikesB.object(i).c //creates a vector of size as the i-th vector in the list
+		spikeyB.fill(nO+i+1) // fill all entries with the number i+1
+		spikeyB.mark(graster, spikesB.object(i), "|", marksize, 4, brusher)
+	}
+	for i = 0,nO-1 {
+		spikeyO = new Vector()
+		spikeyO = spikesO.object(i).c //creates a vector of size as the i-th vector in the list
+		spikeyO.fill(i+1) // fill all entries with the number i+1
+		spikeyO.mark(graster, spikesO.object(i), "|", marksize, 3, brusher)
+	}
+
+	graster.view(0, 0, t, nO+nI+nB+nE+1, 100, 100, 1000, 600)
+				
+}
+
+
+// Modulus function for normalising spike times to theta period
+func mod() {
+	return $1%theta
+}
+
+
+// Histogram of spike times
+proc showhist(){local i
+
+	ghistE = new Graph(0) 
+	ghistE.erase_all()
+	ghistI = new Graph(0) 
+	ghistI.erase_all()
+	ghistB = new Graph(0) 
+	ghistB.erase_all()
+	ghistO = new Graph(0) 
+	ghistO.erase_all()
+
+	spiketE = new Vector()
+	spiketI = new Vector()
+	spiketB = new Vector()
+	spiketO = new Vector()
+	
+	for i = 0,nI-1 {
+		spiketI.append(spikesI.object(i)) // accumulate spikes from all cells
+	}
+	for i = 0,nB-1 {
+		spiketB.append(spikesB.object(i)) // accumulate spikes from all cells
+	}
+	for i = 0,nO-1 {
+		spiketO.append(spikesO.object(i)) // accumulate spikes from all cells
+	}
+	for i = 0,nE-1 {
+		spiketE.append(spikesE.object(i)) // accumulate spikes from all cells
+	}
+	
+	if (fTH == 1) {
+		STH = 0
+		ENDT = theta
+		// calculate theta period as time between one pair of O cell spikes
+		//thsize = spikes2.object(0).size()
+		//theta = spiket2.x[thsize-1] - spiket2.x[thsize-2]
+		spiketE.apply("mod")
+		spiketI.apply("mod")
+		spiketB.apply("mod")
+		spiketO.apply("mod")
+	
+	} 
+	//else {
+	//	STH = 500
+	//	ENDT = t
+	//}
+		
+	sphistE = spiketE.histogram(STH, ENDT, HW)		// E
+	sphistI = spiketI.histogram(STH, ENDT, HW)		// I
+	sphistB = spiketB.histogram(STH, ENDT, HW)		// B
+	sphistO = spiketO.histogram(STH, ENDT, HW)		// O
+	
+	thist = new Vector(sphistE.size())
+	thist.indgen(STH, HW)
+
+	sphistE.plot(ghistE, thist)
+	sphistI.plot(ghistI, thist)
+	sphistB.plot(ghistB, thist)
+	sphistO.plot(ghistO, thist)
+
+	vboxh = new VBox()
+	vboxh.intercept(1)	//all following creations go into the "vbox" box
+
+	ghistE.label(ENDT-(ENDT/10), sphistE.max()-10, "E")
+	ghistE.view(STH, 0, ENDT, sphistE.max(), 200, 0, 500, 150)
+	ghistI.view(STH, 0, ENDT, sphistI.max(), 200, 150, 500, 150)
+	ghistB.view(STH, 0, ENDT, sphistB.max(), 200, 300, 500, 150)
+	ghistO.view(STH, 0, ENDT, sphistO.max(), 200, 450, 500, 150)
+	
+	vboxh.intercept(0)	//ends intercept mode
+	vboxh.map("Spike histograms", 200, 200, 500, 600)	//draw the box and its contents
+
+}
+
+
+//###########################################################################
+// Data recordings and storage
+
+// Record cell voltage and calcium traces
+objref Ev, Iv, Bv, Ov  // Vectors that record cell voltage traces (from soma)
+objref Evt, Ivt, Bvt, Ovt  // Vectors that record times
+
+// Data storage
+objref fo
+strdef fno, ff, fstem, prefolder, prestem
+
+prefolder = "../../../Results/ThetaGamma"
+prestem = "run"
+expdate = 240215	// today's date
+exprun = 1		// run number
+
+
+// Record soma voltage traces from example cells
+proc recordV() { 
+	Ev = new Vector()
+	Evt = new Vector()
+	Iv = new Vector()
+	Ivt = new Vector()
+	Bv = new Vector()
+	Bvt = new Vector()
+	Ov = new Vector()
+	Ovt = new Vector()
+	
+	Ecell.object(0).soma cvode.record(&v(0.5), Ev, Evt)
+	Icell.object(0).soma cvode.record(&v(0.5), Iv, Ivt)
+	Bcell.object(0).soma cvode.record(&v(0.5), Bv, Bvt)
+	Ocell.object(0).soma cvode.record(&v(0.5), Ov, Ovt)
+}
+
+
+// Store voltage traces
+
+proc storevoltage() { local i
+	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
+	fo = new File(fno)
+	fo.wopen()
+	for i=0, $o4.size-1 {
+        	fo.printf("%g %g\n", $o5.x[i], $o4.x[i])
+	}
+	fo.close()
+}
+
+proc storeVall() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storevoltage(ff, fstem, "Ev", Ev, Evt)
+	storevoltage(ff, fstem, "Iv", Iv, Ivt)
+	storevoltage(ff, fstem, "Bv", Bv, Bvt)
+	storevoltage(ff, fstem, "Ov", Ov, Ovt)
+}
+
+
+// Store spike times
+
+proc storespikes() { local i, j
+	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
+	fo = new File(fno)
+	fo.wopen()
+      	for i = 0,$4-1 {
+		for j=0, $o5.object(i).size-1 {
+        		fo.printf("%g %g\n", $o5.object(i).x[j], i)
+      		}
+      	}
+      	fo.close()
+
+}
+
+proc storespikesall() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storespikes(ff, fstem, "Esp", nE, spikesE)
+	storespikes(ff, fstem, "Isp", nI, spikesI)
+	storespikes(ff, fstem, "Bsp", nB, spikesB)
+	storespikes(ff, fstem, "Osp", nO, spikesO)
+}
+
+
+//#####################################################################
+//GUI panels
+
+proc creategraphics() {
+	//xpanel("Graphics")
+	xlabel("Graphics")
+	xbutton("Raster plot", "showraster()")
+	xvalue("Start binning (ms)", "STH")
+	xvalue("End binning (ms)", "ENDT")
+	xvalue("Bin width (ms)", "HW")
+	xstatebutton("Theta histogram?", &fTH)
+	xvalue("Theta period (ms)", "theta")
+	xbutton("Spike histograms", "showhist()")
+	//xpanel()
+}
+
+
+proc createdataout() {
+  	//xpanel("Data output")
+  	xlabel("Data output")
+  	xvalue("Date (ddmmyy)", "expdate")
+  	xvalue("Experiment run", "exprun")
+  	xbutton("Store voltage traces", "storeVall()")
+  	xbutton("Store spike times", "storespikesall()")
+  	//xpanel()
+}
+
+
+proc createGUI() {
+	xpanel("GUI")
+	creategraphics()
+	createdataout()
+	xpanel()
+}
+
+
+//############################################################################
+// INITIALISE GRAPHICS AND RECORDINGS
+
+access Ecell.object(0).soma // by some reason it is only possible to record "t" when a section is accessed
+tvec = new Vector()
+tvec.record(&t,DT)
+
+preprasterplot()
+recordV()
+
+//load_file("OIBEthetagamma.ses")
+//createGUI()
+

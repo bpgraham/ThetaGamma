@@ -1,0 +1,318 @@
+// Network consisting of PC-BC-BSC-OLM cells.
+// Can generate theta with nested gamma.
+// Based on the models of Orban (2006) and Tort/Kopell (2007).
+// Some cell code from ModelDB accession 138421 (Kopell book chapter).
+// New 5-cpt PC model based on Tort, but using ion channels and distributions
+// from my Migliore-adapted PC model from Neural Computation (2014) paper.
+// This variation includes a population of dendrite-targetting BSC cells.
+// Programmed by BPG 24-2-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("celltem.hoc")
+load_file("CA1PC5.hoc")
+
+fEmodel = 2	// 0 = single cpt Ecell; 1 = 5 cpt Tort; 2 = 5 cpt CA1 PC
+
+// NETWORK IN USE
+nO = 70	// number of O (OLM) cells
+nI = 100	// number of I (BC) cells
+nB = 100	// number of B (BSC) cells
+nE = 15	// number of E (PC) cells
+
+// RANDOM NUMBER GENERATORS
+objref r,r1,r2,r2E,r2O,r2I,r2B,r3E,r3O,r3I,r3B
+//r = new Random()
+r = new Random(0)	// start each with a different seed
+r1 = new Random(1)
+r2 = new Random(2)
+r2E = new Random(20)
+r2O = new Random(21)
+r2I = new Random(22)
+r2B = new Random(23)
+r3E = new Random(30)
+r3O = new Random(31)
+r3I = new Random(32)
+r3B = new Random(33)
+
+// Base current drives
+// DRIVE IN USE
+Idrive=0.0008	// mA/cm2
+Istd=0.0001
+//Bdrive=0.0001	// mA/cm2
+Bdrive=0.0
+Bstd=0.00001
+Odrive=-0.003
+Ostd=0.00007
+Edrive=0.008
+Estd=0.0001
+
+// Noise specifications
+// uniform range for initial membrane voltage (Tort/Kopell)
+r.uniform(-80,-60)
+// phase disturbing initial current injection (Tort/Kopell)
+r1.uniform(0,250)	// duration
+Emean = 0.1	// nA for IClamp
+Omean = 0.01
+Imean = 0.002
+//Bmean = 0.0001
+Bmean = 0.0
+//r2.normal(0.002,(0.0002)^2)	// amplitude (nA)
+r2E.normal(Emean,(Emean/10)^2)	// amplitude (nA)
+r2O.normal(Omean,(Omean/10)^2)	// amplitude (nA)
+r2I.normal(Imean,(Imean/10)^2)	// amplitude (nA)
+r2B.normal(Bmean,(Bmean/10)^2)	// amplitude (nA)
+// drive current variation
+r3I.normal(Idrive,Istd^2)	
+r3B.normal(Bdrive,Bstd^2)	
+r3O.normal(Odrive,Ostd^2)	
+r3E.normal(Edrive,Estd^2)	
+
+// Connection strengths (ZERO)
+OIstrength = 0.0
+IOstrength = 0.0
+IIstrength = 0.0
+IEstrength = 0.0
+OEstrength = 0.0
+EIstrength = 0.0
+EOstrength = 0.0
+// CONTROL
+OIstrength = 0.0002
+IOstrength = 0.0005
+IIstrength = 0.0001
+IEstrength = 0.005
+OEstrength = 0.001
+EIstrength = 0.00005
+EOstrength = 0.00001
+BIstrength = 0.0002
+IBstrength = 0.0002
+EBstrength = 0.0005
+BEstrength = 0.005
+// CONNECTION STRENGTHS IN USE (uS)
+OIstrength = 0.0002
+IOstrength = 0.0005
+IIstrength = 0.0001
+IEstrength = 0.005
+OEstrength = 0.001
+EIstrength = 0.00005
+EOstrength = 0.00001
+BIstrength = 0.00005
+IBstrength = 0.00005
+EBstrength = 0.0001
+BEstrength = 0.0005
+
+// Connection delays
+OIdelay = 2
+OEdelay = 2
+IOdelay = 2
+IIdelay = 2
+IEdelay = 2
+EIdelay = 2
+EOdelay = 2
+BIdelay = 2
+BEdelay = 2
+IBdelay = 2
+EBdelay = 2
+
+// Cell convergence (numbers of cells) onto target (100%: Tort/Kopell)
+OIconv = nO
+OEconv = nO
+IOconv = nI
+IIconv = nI
+IEconv = nI
+EIconv = nE
+EOconv = nE
+BIconv = nB
+BEconv = nB
+IBconv = nI
+EBconv = nE
+// CONTROL
+OIconv = 5
+OEconv = 8
+IOconv = 5
+IIconv = 60
+IEconv = 20
+EIconv = 5
+EOconv = 5
+BIconv = 40
+BEconv = 20
+IBconv = 40
+EBconv = 5
+// CELL CONVERGENCE IN USE
+OIconv = 5
+OEconv = 8
+IOconv = 5
+IIconv = 60
+IEconv = 20
+EIconv = 5
+EOconv = 5
+BIconv = 0
+BEconv = 20
+IBconv = 20
+EBconv = 5
+
+// Final individual connection weights
+if (OIconv > 0) {OIweight = OIstrength/OIconv} else {OIweight = 0}
+if (OEconv > 0) {OEweight = OEstrength/OEconv} else {OEweight = 0}
+if (IOconv > 0) {IOweight = IOstrength/IOconv} else {IOweight = 0}
+if (IIconv > 0) {IIweight = IIstrength/IIconv} else {IIweight = 0}
+if (IEconv > 0) {IEweight = IEstrength/IEconv} else {IEweight = 0}
+if (EIconv > 0) {EIweight = EIstrength/EIconv} else {EIweight = 0}
+if (EOconv > 0) {EOweight = EOstrength/EOconv} else {EOweight = 0}
+if (EBconv > 0) {EBweight = EBstrength/EBconv} else {EBweight = 0}
+if (BEconv > 0) {BEweight = BEstrength/BEconv} else {BEweight = 0}
+if (IBconv > 0) {IBweight = IBstrength/IBconv} else {IBweight = 0}
+if (BIconv > 0) {BIweight = BIstrength/BIconv} else {BIweight = 0}
+
+// CELLS
+objectvar Ocell, Icell, Ecell, Bcell, nclist
+Ocell = new List()
+Icell = new List()
+Bcell = new List()
+Ecell = new List()
+nclist = new List()	// all network Netconns
+
+// RECORDING AND STIMULATION
+objectvar oapc[nO], iapc[nI], bapc[nB], eapc[nE]
+objectvar ostim[nO], istim[nI], bstim[nB], estim[nE]
+objectvar timeispikes[nI], timeespikes[nE], timebspikes[nB], timeospikes[nO]
+objref tvec
+
+// CREATING CELLS
+// initial voltage values uniformed distributed in (A,B):
+objref cell
+
+for(i=0; i<nO; i=i+1)	{
+		cell = new OCell()
+		Ocell.append(cell)
+		cell.soma oapc[i] = new APCount(0.5)
+		cell.soma	{
+			drive_Ocellchann = r3O.repick()	
+			//drive_Ocellchann = Odrive
+			v = r.repick() 
+			}
+}
+ 
+for(i=0; i<nI; i=i+1)	{
+		cell = new ICell()
+		Icell.append(cell)
+		cell.soma iapc[i] = new APCount(0.5)
+		cell.soma	{
+			drive_Icellchann = r3I.repick()	
+			//drive_Icellchann = Idrive
+			v = r.repick()
+			}
+}
+ 
+for(i=0; i<nB; i=i+1)	{
+		cell = new ICell()	// use same cell model as for basket cell (I)
+		Bcell.append(cell)
+		cell.soma bapc[i] = new APCount(0.5)
+		cell.soma	{
+			drive_Bcellchann = r3B.repick()	
+			//drive_Bcellchann = Bdrive
+			v = r.repick()
+			}
+}
+
+for(i=0; i<nE; i=i+1)	{
+		cell = new PCell5()
+		cell.soma insert Celldrive
+		Ecell.append(cell)
+		cell.soma eapc[i] = new APCount(0.5)
+		cell.soma.v = r.repick()
+		cell.soma	{
+			drive_Celldrive = r3E.repick()	
+			//drive_Celldrive = Edrive
+			}
+}
+							
+
+// SETTING INITIAL PHASE SHIFT  (ie, random initial conditions in each trial, in addition to random intital v)
+for(i=0; i<nO; i=i+1)	{
+		ostim[i] = new IClamp()
+		Ocell.object(i).soma ostim[i].loc(0.5)
+		ostim[i].del = 0
+		ostim[i].dur = r1.repick()
+		ostim[i].amp = r2O.repick()
+}
+
+for(i=0; i<nI; i=i+1)	{
+		istim[i] = new IClamp()
+		Icell.object(i).soma istim[i].loc(0.5)
+		istim[i].del = 0
+		istim[i].dur = r1.repick()
+		istim[i].amp = r2I.repick()
+}
+
+for(i=0; i<nB; i=i+1)	{
+		bstim[i] = new IClamp()
+		Bcell.object(i).soma bstim[i].loc(0.5)
+		bstim[i].del = 0
+		bstim[i].dur = r1.repick()
+		bstim[i].amp = r2B.repick()
+}
+
+for(i=0; i<nE; i=i+1) {	
+		estim[i] = new IClamp()
+		Ecell.object(i).soma estim[i].loc(0.5)
+		estim[i].del = 0
+		estim[i].dur = r1.repick()
+		estim[i].amp = r2E.repick()
+}
+
+
+// CREATE NETWORK
+
+// Target cells receive "convergence" number of inputs from
+// the pool of source cells (only one input per source cell at most)
+// ("convergence" not reached if no. of sources < convergence)
+// Connections made to all target synapse numbers between "first" and "last".
+// connectcells(list of source cells, list of target cells 
+//		convergence, first synapse, last synapse
+//		connection delay, weight)
+// appends the NetCons to a List called nclist
+
+//r2.discunif(0, nE)
+
+proc connectcells() {local i, j, nsyn, r  localobj syn, nc, u
+  	// initialize the pseudorandom number generator
+ 	u = new Vector($o1.count)  // for sampling without replacement
+  	for i=0, $o2.count-1 {	// loop over target cells
+   		u.fill(0)  // u.x[i]==1 means spike source i has already been chosen
+     		nsyn = 0
+      		while (nsyn < $3 && nsyn < $o1.count) {
+ 			r = r2.discunif(0, $o1.count-1)  // return a source cell index
+        		// no self-connection and only one connection from any source
+        		if (u.x[r] == 0) {	// only one connection from any source
+          			for j = $4, $5 {	// target synapses
+            				// set up connection from source to target
+            				syn = $o2.object(i).pre_list.object(j)
+            				nc = $o1.object(r).connect2target(syn)
+            				nclist.append(nc)
+            				nc.delay = $6
+            				nc.weight = $7
+          			}
+          		u.x[r] = 1
+          		nsyn += 1
+        		}
+      		}
+    	}
+}
+
+
+connectcells(Ecell, Icell, EIconv, 0, 0, EIdelay, EIweight)	// AMPA only
+connectcells(Ecell, Bcell, EBconv, 0, 0, EBdelay, EBweight)	// AMPA only
+connectcells(Ecell, Ocell, EOconv, 0, 1, EOdelay, EOweight)	// AMPA+NMDA
+connectcells(Icell, Icell, IIconv, 2, 2, IIdelay, IIweight)
+connectcells(Icell, Ocell, IOconv, 2, 2, IOdelay, IOweight)
+connectcells(Icell, Bcell, IBconv, 2, 2, IBdelay, IBweight)
+connectcells(Icell, Ecell, IEconv, 2, 2, IEdelay, IEweight)
+connectcells(Ocell, Ecell, OEconv, 3, 3, OEdelay, OEweight)
+connectcells(Ocell, Icell, OIconv, 3, 3, OIdelay, OIweight)
+connectcells(Bcell, Icell, BIconv, 2, 2, BIdelay, BIweight)
+connectcells(Bcell, Ecell, BEconv, 4, 4, BEdelay, BEweight)
+
+
+
+// Load GUI
+load_file("OIBEgraphics.hoc")
