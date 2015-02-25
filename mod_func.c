@@ -25,6 +25,7 @@ fprintf(stderr," km.mod");
 fprintf(stderr," na3n.mod");
 fprintf(stderr," naxn.mod");
 fprintf(stderr," nmda.mod");
+fprintf(stderr," nmdaca.mod");
 fprintf(stderr, "\n");
     }
 _ECellOlufsen_reg();
@@ -44,4 +45,5 @@ _km_reg();
 _na3n_reg();
 _naxn_reg();
 _nmda_reg();
+_nmdaca_reg();
 }

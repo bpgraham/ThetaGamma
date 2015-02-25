@@ -53,12 +53,6 @@ Ostd=0.00007
 Edrive=0.008
 Estd=0.001
 
-// CA3 and EC Netstim drives
-CA3isi = 2	// ISI (ms)
-CA3noise = 1	// ISI noise (1=negexp)
-ECisi = 2	// ISI (ms)
-ECnoise = 1	// ISI noise (1=negexp)
-
 // Noise specifications
 // uniform range for initial membrane voltage (Tort/Kopell)
 r.uniform(-80,-60)
@@ -104,17 +98,27 @@ BEstrength = 0.005
 OIstrength = 0.0002
 IOstrength = 0.0005
 IIstrength = 0.0001
-IEstrength = 0.001
+//IEstrength = 0.005
+//IEstrength = 0.008
+IEstrength = 0.012
 OEstrength = 0.001
 EIstrength = 0.00005
 EOstrength = 0.00001
 BIstrength = 0.00005
 IBstrength = 0.00005
 EBstrength = 0.0001
-BEstrength = 0.0005
+//BEstrength = 0.005	// reasonable PC spiking
+BEstrength = 0.008	// reduced PC spiking (but still ok)
 
 // SPIKING INPUTS
-CA3weight = 0.005
+// CA3 and EC Netstim drives
+CA3isi = 20	// ISI (ms)
+CA3noise = 0	// ISI noise (1=negexp)
+ECisi = 2	// ISI (ms)
+ECnoise = 1	// ISI noise (1=negexp)
+CA3weight = 0.02
+//CA3weight = 0.015	// CONTROL? large EPSPs, but no Ca/NMDA spikes
+//CA3weight = 0.005
 ECweight = 0.001
 
 // Connection delays
@@ -249,7 +253,7 @@ for(i=0; i<nE; i=i+1)	{
 		CA3spikes[i] = new NetStim()
 		CA3spikes[i].interval = CA3isi
 		CA3spikes[i].noise = CA3noise
-		CA3spikes[i].start = 10
+		CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
 		CA3spikes[i].number = Tstop / CA3isi
 		CA3ncA[i] = new NetCon(CA3spikes[i], cell.pre_list.object(5))
 		CA3ncN[i] = new NetCon(CA3spikes[i], cell.pre_list.object(6))

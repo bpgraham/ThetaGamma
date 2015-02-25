@@ -118,13 +118,13 @@ proc init() {
 	caR_tinact = 20	// make inactivation faster
 
 	// remove some currents
-	soma_km = 0.0
-	soma_caR = 0.0 
-	soma_sAHP = 0.0
-	soma_mAHP = 0.0
-	caR_init = 0.0
-	sAHP_init = 0.0
-	mAHP_init = 0.0
+	//soma_km = 0.0
+	//soma_caR = 0.0 
+	//soma_sAHP = 0.0
+	//soma_mAHP = 0.0
+	//caR_init = 0.0
+	//sAHP_init = 0.0
+	//mAHP_init = 0.0
 	//ghd=0.0
 
 
@@ -300,19 +300,25 @@ proc synapses() {
     	syn_.tau1 = 0.5
     	syn_.tau2 = 10
     	syn_.e = -80
-	Adend[1] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 5: AMPA
+	Adend[1] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 5: CA3-AMPA
     	syn_.tau1 = 0.5
     	syn_.tau2 = 3
     	syn_.e = 0
-  	Adend[1] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 6: NMDA
-    	syn_.tcon = 2.3	
-    	syn_.tcoff = 100
-    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
-	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 7: AMPA
+      	Adend[1] syn_ = new NMDAca(0.5) pre_list.append(syn_)	// 6: CA3-NMDA
+      	syn_.fCa = 0.1	// fraction of Ca current (Bloodgood & Sabatini)
+      	syn_.tcon = 3	
+      	syn_.tcoff = 100
+      	syn_.mgconc = 1	// (mM) standard Mg conc
+      	syn_.gamma = 0.08	// Larkum Science 2009 (sharpens voltage curve)
+  	//Adend[1] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 6: CA3-NMDA
+    	//syn_.tcon = 2.3	
+    	//syn_.tcoff = 100
+    	//syn_.gNMDAmax = 1	// use connection weight to determine max cond
+	Adend[2] syn_ = new Exp2Syn(0.5)  pre_list.append(syn_)	// 7: EC-AMPA
     	syn_.tau1 = 0.5
     	syn_.tau2 = 3
     	syn_.e = 0
-  	Adend[2] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 8: NMDA
+  	Adend[2] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 8: EC-NMDA
     	syn_.tcon = 2.3	
     	syn_.tcoff = 100
     	syn_.gNMDAmax = 1	// use connection weight to determine max cond
