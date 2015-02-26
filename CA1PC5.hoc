@@ -318,10 +318,11 @@ proc synapses() {
     	syn_.tau1 = 0.5
     	syn_.tau2 = 3
     	syn_.e = 0
-  	Adend[2] syn_ = new NMDA(0.5)  pre_list.append(syn_)	// 8: EC-NMDA
-    	syn_.tcon = 2.3	
-    	syn_.tcoff = 100
-    	syn_.gNMDAmax = 1	// use connection weight to determine max cond
+  	Adend[2] syn_ = new NMDAca(0.5)  pre_list.append(syn_)	// 8: EC-NMDA
+      	syn_.fCa = 0.1	// fraction of Ca current (Bloodgood & Sabatini)
+      	syn_.tcon = 3	
+      	syn_.tcoff = 100
+      	syn_.mgconc = 1	// (mM) standard Mg conc
 }
 
 

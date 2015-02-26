@@ -181,6 +181,7 @@ proc showhist(){local i
 // Record cell voltage and calcium traces
 objref Ev, Iv, Bv, Ov  // Vectors that record cell voltage traces (from soma)
 objref Evt, Ivt, Bvt, Ovt  // Vectors that record times
+objref Eca, Ecat	// Dendritic calcium
 
 // Data storage
 objref fo
@@ -188,7 +189,7 @@ strdef fno, ff, fstem, prefolder, prestem
 
 prefolder = "../../../Results/ThetaGamma"
 prestem = "run"
-expdate = 240215	// today's date
+expdate = 260215	// today's date
 exprun = 1		// run number
 
 
@@ -212,7 +213,7 @@ proc recordV() {
 
 // Store voltage traces
 
-proc storevoltage() { local i
+proc storedata() { local i
 	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
 	fo = new File(fno)
 	fo.wopen()
@@ -226,10 +227,27 @@ proc storeVall() {
 	sprint(ff, "%s/%g", prefolder, expdate)
 	sprint(fstem, "run%g", exprun)
 	
-	storevoltage(ff, fstem, "Ev", Ev, Evt)
-	storevoltage(ff, fstem, "Iv", Iv, Ivt)
-	storevoltage(ff, fstem, "Bv", Bv, Bvt)
-	storevoltage(ff, fstem, "Ov", Ov, Ovt)
+	storedata(ff, fstem, "Ev", Ev, Evt)
+	storedata(ff, fstem, "Iv", Iv, Ivt)
+	storedata(ff, fstem, "Bv", Bv, Bvt)
+	storedata(ff, fstem, "Ov", Ov, Ovt)
+}
+
+
+// Record dendritic calcium traces from example cells
+proc recordCa() { 
+	Eca = new Vector()
+	Ecat = new Vector()
+	
+	Ecell.object(0).Adend[1] cvode.record(&cai(0.5), Eca, Ecat)
+}
+
+// Store calcium traces
+proc storeCa() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EcaAd1", Eca, Ecat)
 }
 
 
@@ -283,6 +301,7 @@ proc createdataout() {
   	xvalue("Experiment run", "exprun")
   	xbutton("Store voltage traces", "storeVall()")
   	xbutton("Store spike times", "storespikesall()")
+  	xbutton("Store calcium traces", "storeCa()")
   	//xpanel()
 }
 
@@ -304,6 +323,7 @@ tvec.record(&t,DT)
 
 preprasterplot()
 recordV()
+recordCa()
 
 //load_file("OIBEthetagamma.ses")
 //createGUI()

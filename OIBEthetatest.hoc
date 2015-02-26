@@ -5,6 +5,7 @@
 // New 5-cpt PC model based on Tort, but using ion channels and distributions
 // from my Migliore-adapted PC model from Neural Computation (2014) paper.
 // This variation includes a population of dendrite-targetting BSC cells.
+// PCs driven by single stream spiking input from CA3 and/or EC to dendrites.
 // Programmed by BPG 24-2-15
 
 load_file("nrngui.hoc") // make graphical interface tools available to this program
@@ -20,7 +21,7 @@ nI = 100	// number of I (BC) cells
 nB = 100	// number of B (BSC) cells
 nE = 15	// number of E (PC) cells
 // NETWORK IN USE
-nO = 10	// number of O (OLM) cells
+nO = 50	// number of O (OLM) cells
 nI = 50	// number of I (BC) cells
 nB = 50	// number of B (BSC) cells
 nE = 50	// number of E (PC) cells
@@ -50,6 +51,7 @@ Bstd=0.00001
 Bthdr=0.0008	// mA/cm2
 Odrive=-0.003
 Ostd=0.00007
+Othdr=0.003	// mA/cm2
 Edrive=0.008
 Estd=0.001
 
@@ -82,6 +84,10 @@ IEstrength = 0.0
 OEstrength = 0.0
 EIstrength = 0.0
 EOstrength = 0.0
+BIstrength = 0.0
+IBstrength = 0.0
+EBstrength = 0.0
+BEstrength = 0.0
 // CONTROL
 OIstrength = 0.0002
 IOstrength = 0.0005
@@ -101,7 +107,7 @@ IIstrength = 0.0001
 //IEstrength = 0.005
 //IEstrength = 0.008
 IEstrength = 0.012
-OEstrength = 0.001
+OEstrength = 0.02
 EIstrength = 0.00005
 EOstrength = 0.00001
 BIstrength = 0.00005
@@ -114,12 +120,11 @@ BEstrength = 0.008	// reduced PC spiking (but still ok)
 // CA3 and EC Netstim drives
 CA3isi = 20	// ISI (ms)
 CA3noise = 0	// ISI noise (1=negexp)
-ECisi = 2	// ISI (ms)
-ECnoise = 1	// ISI noise (1=negexp)
-CA3weight = 0.02
-//CA3weight = 0.015	// CONTROL? large EPSPs, but no Ca/NMDA spikes
-//CA3weight = 0.005
-ECweight = 0.001
+ECisi = 20	// ISI (ms)
+ECnoise = 0	// ISI noise (1=negexp)
+//CA3weight = 0.02	// CONTROL
+CA3weight = 0.01
+ECweight = 0.02
 
 // Connection delays
 OIdelay = 2
@@ -160,16 +165,14 @@ IBconv = 40
 EBconv = 5
 // CELL CONVERGENCE IN USE
 OIconv = 0
-OEconv = 0
+OEconv = 20
 IOconv = 0
 IIconv = 0
 IEconv = 20
-//IEconv = 0
 EIconv = 0
 EOconv = 0
 BIconv = 0
 BEconv = 20
-//BEconv = 0
 IBconv = 0
 EBconv = 0
 
@@ -197,7 +200,7 @@ nclist = new List()	// all network Netconns
 // RECORDING AND STIMULATION
 objectvar oapc[nO], iapc[nI], bapc[nB], eapc[nE]
 objectvar ostim[nO], istim[nI], bstim[nB], estim[nE]
-objectvar btheta[nB], itheta[nI]
+objectvar btheta[nB], itheta[nI], otheta[nO]
 objectvar CA3spikes[nE], ECspikes[nE], CA3ncA[nE], CA3ncN[nE], ECncA[nE], ECncN[nE]
 objectvar timeispikes[nI], timeespikes[nE], timebspikes[nB], timeospikes[nO]
 objref tvec
@@ -211,8 +214,8 @@ for(i=0; i<nO; i=i+1)	{
 		Ocell.append(cell)
 		cell.soma oapc[i] = new APCount(0.5)
 		cell.soma	{
-			drive_Ocellchann = r3O.repick()	
-			//drive_Ocellchann = Odrive
+			//drive_Ocellchann = r3O.repick()	
+			drive_Ocellchann = Odrive
 			v = r.repick() 
 			}
 }
@@ -249,7 +252,7 @@ for(i=0; i<nE; i=i+1)	{
 			//drive_Celldrive = r3E.repick()	
 			//drive_Celldrive = Edrive
 			}
-		// spiking input
+		// spiking CA3 input
 		CA3spikes[i] = new NetStim()
 		CA3spikes[i].interval = CA3isi
 		CA3spikes[i].noise = CA3noise
@@ -259,6 +262,16 @@ for(i=0; i<nE; i=i+1)	{
 		CA3ncN[i] = new NetCon(CA3spikes[i], cell.pre_list.object(6))
 		CA3ncA[i].weight= CA3weight
 		CA3ncN[i].weight= CA3weight
+		// spiking EC input
+		ECspikes[i] = new NetStim()
+		ECspikes[i].interval = ECisi
+		ECspikes[i].noise = ECnoise
+		ECspikes[i].start = r3E.normal(2*ECisi, ECisi/2)
+		ECspikes[i].number = Tstop / ECisi
+		ECncA[i] = new NetCon(ECspikes[i], cell.pre_list.object(7))
+		ECncN[i] = new NetCon(ECspikes[i], cell.pre_list.object(8))
+		ECncA[i].weight= ECweight
+		ECncN[i].weight= ECweight
 }
 							
 
@@ -267,8 +280,16 @@ for(i=0; i<nO; i=i+1)	{
 		ostim[i] = new IClamp()
 		Ocell.object(i).soma ostim[i].loc(0.5)
 		ostim[i].del = 0
-		ostim[i].dur = r1.repick()
-		ostim[i].amp = r2O.repick()
+		//ostim[i].dur = r1.repick()
+		//ostim[i].amp = r2O.repick()
+		// theta rhythm
+		ostim[i].dur = Tstop
+		oamp = r3O.normal(Othdr,(Othdr/10)^2)
+		otheta[i] = new Vector(Tstop)
+		otheta[i].sin(thetafr, r3O.normal(PI,(2*PI/10)^2))
+		otheta[i].add(1)
+		otheta[i].mul(oamp)
+		otheta[i].play(&ostim[i].amp, 1)
 }
 
 for(i=0; i<nI; i=i+1)	{
@@ -348,6 +369,23 @@ proc connectcells() {local i, j, nsyn, r  localobj syn, nc, u
         		}
       		}
     	}
+}
+
+
+// connect spike generators to synapses
+proc connectinputs() {local i
+
+		// spiking CA3 input
+		i = 0				// PLACEHOLDER
+		CA3spikes[i] = new NetStim()
+		CA3spikes[i].interval = CA3isi
+		CA3spikes[i].noise = CA3noise
+		CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+		CA3spikes[i].number = Tstop / CA3isi
+		CA3ncA[i] = new NetCon(CA3spikes[i], cell.pre_list.object(5))
+		CA3ncN[i] = new NetCon(CA3spikes[i], cell.pre_list.object(6))
+		CA3ncA[i].weight= CA3weight
+		CA3ncN[i].weight= CA3weight
 }
 
 
