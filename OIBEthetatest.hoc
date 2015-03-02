@@ -45,13 +45,13 @@ r3B = new Random(33)
 // DRIVE IN USE
 Idrive=0.0008	// mA/cm2
 Istd=0.0001
-Ithdr=0.0008	// mA/cm2
+Ithdr=0.0008	// nA
 Bdrive=0.0001	// mA/cm2
 Bstd=0.00001
-Bthdr=0.0008	// mA/cm2
+Bthdr=0.0008	// nA
 Odrive=-0.003
 Ostd=0.00007
-Othdr=0.003	// mA/cm2
+Othdr=0.003	// nA
 Edrive=0.008
 Estd=0.001
 
@@ -122,9 +122,10 @@ CA3isi = 20	// ISI (ms)
 CA3noise = 0	// ISI noise (1=negexp)
 ECisi = 20	// ISI (ms)
 ECnoise = 0	// ISI noise (1=negexp)
-//CA3weight = 0.02	// CONTROL
-CA3weight = 0.01
+CA3weight = 0.02	// CONTROL (strong)
+CA3weight2 = 0.01	// Weak
 ECweight = 0.02
+//ECweight = 0.0
 
 // Connection delays
 OIdelay = 2
@@ -202,6 +203,7 @@ objectvar oapc[nO], iapc[nI], bapc[nB], eapc[nE]
 objectvar ostim[nO], istim[nI], bstim[nB], estim[nE]
 objectvar btheta[nB], itheta[nI], otheta[nO]
 objectvar CA3spikes[nE], ECspikes[nE], CA3ncA[nE], CA3ncN[nE], ECncA[nE], ECncN[nE]
+objectvar CA3spikes2[nE], CA3ncA2[nE], CA3ncN2[nE]
 objectvar timeispikes[nI], timeespikes[nE], timebspikes[nB], timeospikes[nO]
 objref tvec
 
@@ -253,21 +255,42 @@ for(i=0; i<nE; i=i+1)	{
 			//drive_Celldrive = Edrive
 			}
 		// spiking CA3 input
-		CA3spikes[i] = new NetStim()
+//		CA3spikes[i] = new NetStim()
+		CA3spikes[i] = new BurstStim2()
 		CA3spikes[i].interval = CA3isi
 		CA3spikes[i].noise = CA3noise
-		CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+//		CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+		CA3spikes[i].start = 500/thetafr	// recall phase
 		CA3spikes[i].number = Tstop / CA3isi
+		CA3spikes[i].burstint = 500/thetafr	// half theta period
+		CA3spikes[i].burstlen = 500/thetafr
 		CA3ncA[i] = new NetCon(CA3spikes[i], cell.pre_list.object(5))
 		CA3ncN[i] = new NetCon(CA3spikes[i], cell.pre_list.object(6))
 		CA3ncA[i].weight= CA3weight
 		CA3ncN[i].weight= CA3weight
+		// "weak" CA3 input
+		CA3spikes2[i] = new BurstStim2()
+		CA3spikes2[i].interval = CA3isi
+		CA3spikes2[i].noise = CA3noise
+//		CA3spikes2[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+		CA3spikes2[i].start = 0		// storage phase
+		CA3spikes2[i].number = Tstop / CA3isi
+		CA3spikes2[i].burstint = 500/thetafr	// half theta period
+		CA3spikes2[i].burstlen = 500/thetafr
+		CA3ncA2[i] = new NetCon(CA3spikes2[i], cell.pre_list.object(5))
+		CA3ncN2[i] = new NetCon(CA3spikes2[i], cell.pre_list.object(6))
+		CA3ncA2[i].weight= CA3weight2
+		CA3ncN2[i].weight= CA3weight2
 		// spiking EC input
-		ECspikes[i] = new NetStim()
+//		ECspikes[i] = new NetStim()
+		ECspikes[i] = new BurstStim2()
 		ECspikes[i].interval = ECisi
 		ECspikes[i].noise = ECnoise
-		ECspikes[i].start = r3E.normal(2*ECisi, ECisi/2)
+//		ECspikes[i].start = r3E.normal(2*ECisi, ECisi/2)
+		ECspikes[i].start = 0	// storage phase
 		ECspikes[i].number = Tstop / ECisi
+		ECspikes[i].burstint = 500/thetafr	// half theta period
+		ECspikes[i].burstlen = 500/thetafr
 		ECncA[i] = new NetCon(ECspikes[i], cell.pre_list.object(7))
 		ECncN[i] = new NetCon(ECspikes[i], cell.pre_list.object(8))
 		ECncA[i].weight= ECweight
@@ -371,22 +394,6 @@ proc connectcells() {local i, j, nsyn, r  localobj syn, nc, u
     	}
 }
 
-
-// connect spike generators to synapses
-proc connectinputs() {local i
-
-		// spiking CA3 input
-		i = 0				// PLACEHOLDER
-		CA3spikes[i] = new NetStim()
-		CA3spikes[i].interval = CA3isi
-		CA3spikes[i].noise = CA3noise
-		CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
-		CA3spikes[i].number = Tstop / CA3isi
-		CA3ncA[i] = new NetCon(CA3spikes[i], cell.pre_list.object(5))
-		CA3ncN[i] = new NetCon(CA3spikes[i], cell.pre_list.object(6))
-		CA3ncA[i].weight= CA3weight
-		CA3ncN[i].weight= CA3weight
-}
 
 
 connectcells(Ecell, Icell, EIconv, 0, 0, EIdelay, EIweight)	// AMPA only

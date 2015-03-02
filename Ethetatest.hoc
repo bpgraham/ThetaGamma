@@ -1,0 +1,147 @@
+// Single PC receiving psuedo B-BS-OLM cell inhibition.
+// TESTING USING THETA-RHYTHMIC CONDUCTANCE DRIVE TO PC FOR INHIBITION.
+// New 5-cpt PC model based on Tort, but using ion channels and distributions
+// from my Migliore-adapted PC model from Neural Computation (2014) paper.
+// PC driven by single stream spiking input from CA3 and/or EC to dendrites.
+// Programmed by BPG 2-3-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("CA1PC5.hoc")
+
+Tstop=1000	// ms
+thetafr = 6	// Hz
+
+// RANDOM NUMBER GENERATORS
+objref r,r1,r2,r2E,r2O,r2I,r2B,r3E,r3O,r3I,r3B
+//r = new Random()
+r = new Random(0)	// start each with a different seed
+r2E = new Random(20)
+r3E = new Random(30)
+
+// Base DC current drive
+Edrive=0.008
+Estd=0.001
+
+// Theta-modulated inhibitory drives
+Ithdr=0.01	// uS
+Bthdr=0.01	// uS
+Othdr=0.0	// uS
+
+
+// SPIKING INPUTS
+// CA3 and EC Netstim drives
+CA3isi = 20	// ISI (ms)
+CA3noise = 0	// ISI noise (1=negexp)
+ECisi = 20	// ISI (ms)
+ECnoise = 0	// ISI noise (1=negexp)
+CA3weight = 0.02	// CONTROL (strong)
+CA3weight2 = 0.01	// Weak
+ECweight = 0.02
+//ECweight = 0.0
+
+// CELLS
+objectvar Ecell
+Ecell = new List()
+
+// RECORDING AND STIMULATION
+nE = 1
+nO = 1
+nB = 1
+nI = 1
+objectvar ostim[nO], istim[nI], bstim[nB], estim[nE]
+objectvar btheta[nB], itheta[nI], otheta[nO]
+objectvar CA3spikes[nE], ECspikes[nE], CA3ncA[nE], CA3ncN[nE], ECncA[nE], ECncN[nE]
+objectvar CA3spikes2[nE], CA3ncA2[nE], CA3ncN2[nE]
+objectvar timeispikes[nI], timeespikes[nE], timebspikes[nB], timeospikes[nO]
+objref tvec
+
+// CREATING CELL
+i = 0
+Ecell = new PCell5()
+Ecell.soma insert Celldrive
+Ecell.soma	{
+		//drive_Celldrive = Edrive
+}
+
+// Excitatory stimulation
+		// spiking CA3 input
+//		CA3spikes[i] = new NetStim()
+		CA3spikes[i] = new BurstStim2()
+		CA3spikes[i].interval = CA3isi
+		CA3spikes[i].noise = CA3noise
+//		CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+		CA3spikes[i].start = 500/thetafr	// recall phase
+		CA3spikes[i].number = Tstop / CA3isi
+		CA3spikes[i].burstint = 500/thetafr	// half theta period
+		CA3spikes[i].burstlen = 500/thetafr
+		CA3ncA[i] = new NetCon(CA3spikes[i], Ecell.pre_list.object(5))
+		CA3ncN[i] = new NetCon(CA3spikes[i], Ecell.pre_list.object(6))
+		CA3ncA[i].weight= CA3weight
+		CA3ncN[i].weight= CA3weight
+		// "weak" CA3 input
+		CA3spikes2[i] = new BurstStim2()
+		CA3spikes2[i].interval = CA3isi
+		CA3spikes2[i].noise = CA3noise
+//		CA3spikes2[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+		CA3spikes2[i].start = 0		// storage phase
+		CA3spikes2[i].number = Tstop / CA3isi
+		CA3spikes2[i].burstint = 500/thetafr	// half theta period
+		CA3spikes2[i].burstlen = 500/thetafr
+		CA3ncA2[i] = new NetCon(CA3spikes2[i], Ecell.pre_list.object(5))
+		CA3ncN2[i] = new NetCon(CA3spikes2[i], Ecell.pre_list.object(6))
+		CA3ncA2[i].weight= CA3weight2
+		CA3ncN2[i].weight= CA3weight2
+		// spiking EC input
+//		ECspikes[i] = new NetStim()
+		ECspikes[i] = new BurstStim2()
+		ECspikes[i].interval = ECisi
+		ECspikes[i].noise = ECnoise
+//		ECspikes[i].start = r3E.normal(2*ECisi, ECisi/2)
+		ECspikes[i].start = 0	// storage phase
+		ECspikes[i].number = Tstop / ECisi
+		ECspikes[i].burstint = 500/thetafr	// half theta period
+		ECspikes[i].burstlen = 500/thetafr
+		ECncA[i] = new NetCon(ECspikes[i], Ecell.pre_list.object(7))
+		ECncN[i] = new NetCon(ECspikes[i], Ecell.pre_list.object(8))
+		ECncA[i].weight= ECweight
+		ECncN[i].weight= ECweight
+							
+// Inhibitory stimulation
+		// BC perisomatic inhib
+		istim[i] = new GClamp()
+		Ecell.soma istim[i].loc(0.5)
+		istim[i].del = 0
+		istim[i].dur = Tstop
+		istim[i].erev = -80
+		itheta[i] = new Vector(Tstop)
+		itheta[i].sin(thetafr, 0)
+		itheta[i].add(1)
+		itheta[i].mul(Ithdr)
+		itheta[i].play(&istim[i].amp, 1)
+		// BSC dendritic inhib
+		bstim[i] = new GClamp()
+		Ecell.Adend[1] bstim[i].loc(0.5)
+		bstim[i].del = 0
+		bstim[i].dur = Tstop
+		bstim[i].erev = -80
+		btheta[i] = new Vector(Tstop)
+		btheta[i].sin(thetafr, PI)
+		btheta[i].add(1)
+		btheta[i].mul(Bthdr)
+		btheta[i].play(&bstim[i].amp, 1)
+		// OLM distal dendritic inhib
+		ostim[i] = new GClamp()
+		Ecell.Adend[2] ostim[i].loc(0.5)
+		ostim[i].del = 0
+		ostim[i].dur = Tstop
+		ostim[i].erev = -80
+		otheta[i] = new Vector(Tstop)
+		otheta[i].sin(thetafr, PI)
+		otheta[i].add(1)
+		otheta[i].mul(Othdr)
+		otheta[i].play(&ostim[i].amp, 1)
+
+
+// Load GUI
+//load_file("Egraphics.hoc")
+load_file("Ethetatest.ses")
