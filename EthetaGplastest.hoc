@@ -1,0 +1,345 @@
+// Single PC receiving psuedo B-BS-OLM cell inhibition.
+// USES THETA-RHYTHMIC CONDUCTANCE DRIVE TO PC FOR INHIBITION.
+// New 5-cpt PC model based on Tort, but using ion channels and distributions
+// from my Migliore-adapted PC model from Neural Computation (2014) paper.
+// PC driven by single stream spiking input from CA3 and/or EC to dendrites.
+// Graupner-Brunel plasticity available for excitatory synapses.
+// Programmed by BPG 6-3-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("CA1PC5.hoc")
+
+Tstop=10000	// ms
+thetafr = 6	// Hz
+
+// RANDOM NUMBER GENERATORS
+objref r,r1,r2,r2E,r2O,r2I,r2B,r3E,r3O,r3I,r3B
+//r = new Random()
+r = new Random(0)	// start each with a different seed
+r2E = new Random(20)
+r3E = new Random(30)
+
+// Base DC current drive
+//Edrive=0.008
+Edrive=0.0
+
+// Theta-modulated inhibitory drives
+Ithdr=0.01	// uS
+Bthdr=0.005	// uS
+Othdr=0.005	// uS
+
+// SPIKING INPUTS
+// CA3 and EC Netstim drives
+CA3isi = 20	// ISI (ms)
+CA3noise = 0	// ISI noise (1=negexp)
+ECisi = 20	// ISI (ms)
+ECnoise = 0	// ISI noise (1=negexp)
+CA3weight = 0.02	// CONTROL (strong)
+CA3weight2 = 0.01	// Weak
+ECweight = 0.01
+ECweight2 = 0.005	// Weak, antiphase
+
+
+// CREATING CELL
+objectvar Ecell
+Ecell = new PCell5()
+Ecell.soma insert Celldrive
+Ecell.soma	{
+	drive_Celldrive = Edrive
+}
+
+
+// RECORDING AND STIMULATION
+objectvar ostim, istim, bstim, estim
+objectvar btheta, itheta, otheta
+objectvar CA3spikes, ECspikes, CA3ncA, CA3ncN, ECncA, ECncN
+objectvar CA3spikes2, CA3ncA2, CA3ncN2, ECspikes2, ECncA2, ECncN2
+objref tvec
+
+
+// Excitatory stimulation
+fplas = 1	// plastic AMPA
+// spiking CA3 input
+//CA3spikes = new NetStim()
+CA3spikes = new BurstStim2()
+CA3spikes.interval = CA3isi
+CA3spikes.noise = CA3noise
+//CA3spikes.start = r3E.normal(2*CA3isi, CA3isi/2)
+CA3spikes.start = 500/thetafr	// recall phase
+CA3spikes.number = Tstop / CA3isi
+CA3spikes.burstint = 500/thetafr	// half theta period
+CA3spikes.burstlen = 500/thetafr
+if (fplas == 0) {
+	CA3ncA = new NetCon(CA3spikes, Ecell.pre_list.object(5))
+} else {	// plastic
+	CA3ncA = new NetCon(CA3spikes, Ecell.pre_list.object(9))	// plastic AMPA
+	Ecell.Adend[1] {
+		insert BistableGB 
+		p0_BistableGB=0.5
+		thp_BistableGB=30	// uM
+		thd_BistableGB=20	// uM
+		tau_BistableGB=1000	// uM
+		}
+        setpointer Ecell.pre_list.object(9).R, Ecell.Adend[1].A_BistableGB(0.5)
+}
+CA3ncN = new NetCon(CA3spikes, Ecell.pre_list.object(6))
+CA3ncA.weight= CA3weight
+CA3ncN.weight= CA3weight
+
+// "weak" CA3 input
+CA3spikes2 = new BurstStim2()
+CA3spikes2.interval = CA3isi
+CA3spikes2.noise = CA3noise
+//CA3spikes2.start = r3E.normal(2*CA3isi, CA3isi/2)
+CA3spikes2.start = 0		// storage phase
+CA3spikes2.number = Tstop / CA3isi
+CA3spikes2.burstint = 500/thetafr	// half theta period
+CA3spikes2.burstlen = 500/thetafr
+if (fplas == 0) {
+	CA3ncA2 = new NetCon(CA3spikes2, Ecell.pre_list.object(5))
+} else {	// plastic
+	CA3ncA2 = new NetCon(CA3spikes2, Ecell.pre_list.object(9))	// plastic AMPA
+}
+CA3ncN2 = new NetCon(CA3spikes2, Ecell.pre_list.object(6))
+CA3ncA2.weight= CA3weight2
+CA3ncN2.weight= CA3weight2
+
+// spiking EC input
+//ECspikes = new NetStim()
+ECspikes = new BurstStim2()
+ECspikes.interval = ECisi
+ECspikes.noise = ECnoise
+//ECspikes.start = r3E.normal(2*ECisi, ECisi/2)
+ECspikes.start = 0	// storage phase
+ECspikes.number = Tstop / ECisi
+ECspikes.burstint = 500/thetafr	// half theta period
+ECspikes.burstlen = 500/thetafr
+ECncA = new NetCon(ECspikes, Ecell.pre_list.object(7))
+ECncN = new NetCon(ECspikes, Ecell.pre_list.object(8))
+ECncA.weight= ECweight
+ECncN.weight= ECweight
+
+// "weak" EC input
+//ECspikes = new NetStim()
+ECspikes2 = new BurstStim2()
+ECspikes2.interval = ECisi
+ECspikes2.noise = ECnoise
+//ECspikes.start = r3E.normal(2*ECisi, ECisi/2)
+ECspikes2.start = 500/thetafr	// recall phase
+ECspikes2.number = Tstop / ECisi
+ECspikes2.burstint = 500/thetafr	// half theta period
+ECspikes2.burstlen = 500/thetafr
+ECncA2 = new NetCon(ECspikes, Ecell.pre_list.object(7))
+ECncN2 = new NetCon(ECspikes, Ecell.pre_list.object(8))
+ECncA2.weight= ECweight2
+ECncN2.weight= ECweight2
+
+							
+// Inhibitory stimulation
+
+// BC perisomatic inhib
+istim = new GClamp()
+Ecell.soma istim.loc(0.5)
+istim.del = 0
+istim.dur = Tstop
+istim.erev = -80
+itheta = new Vector(Tstop)
+itheta.sin(thetafr, 0)
+itheta.add(1)
+itheta.mul(Ithdr)
+itheta.play(&istim.amp, 1)
+
+// BSC dendritic inhib
+bstim = new GClamp()
+Ecell.Adend[1] bstim.loc(0.5)
+bstim.del = 0
+bstim.dur = Tstop
+bstim.erev = -80
+btheta = new Vector(Tstop)
+btheta.sin(thetafr, PI)
+btheta.add(1)
+btheta.mul(Bthdr)
+btheta.play(&bstim.amp, 1)
+
+// OLM distal dendritic inhib
+ostim = new GClamp()
+Ecell.Adend[2] ostim.loc(0.5)
+ostim.del = 0
+ostim.dur = Tstop
+ostim.erev = -80
+otheta = new Vector(Tstop)
+otheta.sin(thetafr, PI)
+otheta.add(1)
+otheta.mul(Othdr)
+otheta.play(&ostim.amp, 1)
+
+
+// PARAMETER CONTROL
+
+// Inhibitory strengths
+proc setINamps() {
+	itheta.sin(thetafr, 0)
+	itheta.add(1)
+	itheta.mul(Ithdr)
+	//itheta.play(&istim.amp, 1)
+	btheta.sin(thetafr, PI)
+	btheta.add(1)
+	btheta.mul(Bthdr)
+	//btheta.play(&bstim.amp, 1)
+	otheta.sin(thetafr, PI)
+	otheta.add(1)
+	otheta.mul(Othdr)
+	//otheta.play(&ostim.amp, 1)
+}
+
+
+// Excitatory weights
+proc setEweights() {
+	CA3ncA.weight= CA3weight
+	CA3ncN.weight= CA3weight
+	CA3ncA2.weight= CA3weight2
+	CA3ncN2.weight= CA3weight2
+	ECncA.weight= ECweight
+	ECncN.weight= ECweight
+	ECncA2.weight= ECweight2
+	ECncN2.weight= ECweight2
+}
+
+
+// GUI
+proc inputGUI() {
+	xpanel("Inputs")
+	xlabel("Excitatory")
+	xpvalue("CA3 strong AMPA", &CA3ncA.weight, 1)
+	xpvalue("CA3 strong NMDA", &CA3ncN.weight, 1)
+	xpvalue("CA3 weak AMPA", &CA3ncA2.weight, 1)
+	xpvalue("CA3 weak NMDA", &CA3ncN2.weight, 1)
+	xpvalue("EC strong AMPA", &ECncA.weight, 1)
+	xpvalue("EC strong NMDA", &ECncN.weight, 1)
+	xpvalue("EC weak AMPA", &ECncA2.weight, 1)
+	xpvalue("EC weak NMDA", &ECncN2.weight, 1)
+	xlabel("Inhibitory")
+	xvalue("I", "Ithdr", 1, "setINamps()")
+	xvalue("B", "Bthdr", 1, "setINamps()")
+	xvalue("O", "Othdr", 1, "setINamps()")
+	xpanel()
+}
+
+//###########################################################################
+// Data recordings and storage
+
+// Record cell voltage, current and calcium traces
+objref Ev, EA1v, EA2v // Vectors that record cell voltage traces
+objref Evt, EA1vt, EA2vt // Vectors that record times
+objref EA1ca, EA1cat	// Dendritic calcium
+objref Isi, Isit, Bsi, Bsit, Osi, Osit	// Inhibitory currents and times
+
+// Data storage
+objref fo
+strdef fno, ff, fstem, prefolder, prestem
+
+DT = 1	// record time every 1 ms
+
+prefolder = "../../../Results/ThetaGamma"
+prestem = "run"
+expdate = 030315	// today's date
+exprun = 1		// run number
+
+// Store generic data
+proc storedata() { local i
+	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
+	fo = new File(fno)
+	fo.wopen()
+	for i=0, $o4.size-1 {
+        	fo.printf("%g %g\n", $o5.x[i], $o4.x[i])
+	}
+	fo.close()
+}
+
+// Record soma voltage traces from example cells
+proc recordV() { 
+	Ev = new Vector()
+	Evt = new Vector()
+	EA1v = new Vector()
+	EA1vt = new Vector()
+	EA2v = new Vector()
+	EA2vt = new Vector()
+	
+	Ecell.soma cvode.record(&v(0.5), Ev, Evt)
+	Ecell.Adend[1] cvode.record(&v(0.5), EA1v, EA1vt)
+	Ecell.Adend[2] cvode.record(&v(0.5), EA2v, EA2vt)
+}
+
+// Store voltage traces
+proc storeVall() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EvSoma", Ev, Evt)
+	storedata(ff, fstem, "EvAd1", EA1v, EA1vt)
+	storedata(ff, fstem, "EvAd2", EA2v, EA2vt)
+}
+
+// Record dendritic calcium traces from example cells
+proc recordCa() { 
+	EA1ca = new Vector()
+	EA1cat = new Vector()
+	
+	Ecell.Adend[1] cvode.record(&cai(0.5), EA1ca, EA1cat)
+}
+
+// Store calcium traces
+proc storeCa() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EcaAd1", EA1ca, EA1cat)
+}
+
+// Record inhibitory current traces
+proc recordInh() { 
+	Isi = new Vector()
+	Bsi = new Vector()
+	Osi = new Vector()
+	
+	Isi.record(&istim.i, DT)
+	Bsi.record(&bstim.i, DT)
+	Osi.record(&ostim.i, DT)
+}
+
+// Store inhibitory current traces
+proc storeInh() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "Isi", Isi, tvec)
+	storedata(ff, fstem, "Bsi", Bsi, tvec)
+	storedata(ff, fstem, "Osi", Osi, tvec)
+}
+
+
+proc dataGUI() {
+  	xpanel("Data output")
+  	xlabel("Data output")
+  	xvalue("Date (ddmmyy)", "expdate")
+  	xvalue("Experiment run", "exprun")
+  	xbutton("Store voltage traces", "storeVall()")
+  	xbutton("Store calcium traces", "storeCa()")
+  	xbutton("Store inhibitory currents", "storeInh()")
+  	xpanel()
+}
+
+
+// Set up recordings
+access Ecell.soma // by some reason it is only possible to record "t" when a section is accessed
+tvec = new Vector()
+tvec.record(&t,DT)
+recordV()
+recordCa()
+recordInh()
+
+// Load GUI
+//load_file("Egraphics.hoc")
+inputGUI()
+dataGUI()
+load_file("EthetaGplastest.ses")

@@ -323,6 +323,10 @@ proc synapses() {
       	syn_.tcon = 3	
       	syn_.tcoff = 100
       	syn_.mgconc = 1	// (mM) standard Mg conc
+	Adend[1] syn_ = new Exp2SynGB(0.5)  pre_list.append(syn_)	// 9: CA3-AMPA-plasticGB
+    	syn_.tau1 = 0.5
+    	syn_.tau2 = 3
+    	syn_.e = 0
 }
 
 
