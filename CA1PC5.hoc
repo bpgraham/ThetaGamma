@@ -64,7 +64,7 @@ proc init() {
 	Adend[1] {L = 150 diam = 2}
 	Adend[2] {L = 150 diam = 2}
 
-	fix_seg = 0
+	fix_seg = 1	// 1 gives 1 seg per section
 	
 	soma soma_list.append()
 	Bdend basal_list.append()

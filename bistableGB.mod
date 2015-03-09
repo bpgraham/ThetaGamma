@@ -22,7 +22,7 @@ INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
 NEURON {
 	SUFFIX BistableGB
 	USEION ca READ cai
-	RANGE p, p0, A
+	RANGE p, p0, A, C1
 	GLOBAL tau, ps, gp, gd, thp, thd, tp, td
 }
 

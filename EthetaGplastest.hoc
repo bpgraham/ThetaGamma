@@ -78,7 +78,6 @@ if (fplas == 0) {
 		p0_BistableGB=0.5
 		thp_BistableGB=30	// uM
 		thd_BistableGB=20	// uM
-		tau_BistableGB=1000	// uM
 		}
         setpointer Ecell.pre_list.object(9).R, Ecell.Adend[1].A_BistableGB(0.5)
 }

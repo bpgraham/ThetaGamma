@@ -7,8 +7,22 @@ objectvar ocbox_, ocbox_list_, scene_, scene_list_
 {
 xpanel("Inputs", 0)
 xlabel("Excitatory")
-CA3syn.gNmax = 0.01
-xvalue("CA3 strong NMDA","CA3syn.gNmax", 1,"", 0, 1 )
+CA3wmax = 0.02
+xvalue("CA3 strong AMPA","CA3wmax", 1,"setEweights()", 0, 1 )
+CA3wmin = 1
+xvalue("CA3 weak AMPA","CA3wmin", 1,"setEweights()", 0, 1 )
+CA3wN = 0.001
+xvalue("CA3 NMDA","CA3wN", 1,"setEweights()", 0, 1 )
+CA3wmax2 = 0.02
+xvalue("CA3 background strong AMPA","CA3wmax2", 1,"setEweights()", 0, 1 )
+CA3wmin2 = 0.02
+xvalue("CA3 background weak AMPA","CA3wmin2", 1,"setEweights()", 0, 1 )
+CA3wN2 = 0
+xvalue("CA3 background NMDA","CA3wN2", 1,"setEweights()", 0, 1 )
+ECweight = 0.02
+xvalue("EC strong","ECweight", 1,"setEweights()", 0, 1 )
+ECweight2 = 0
+xvalue("EC weak","ECweight2", 1,"setEweights()", 0, 1 )
 xlabel("Inhibitory")
 Ithdr = 0.01
 xvalue("I","Ithdr", 1,"setINamps()", 0, 0 )
@@ -16,19 +30,7 @@ Bthdr = 0.005
 xvalue("B","Bthdr", 1,"setINamps()", 0, 0 )
 Othdr = 0.005
 xvalue("O","Othdr", 1,"setINamps()", 0, 0 )
-xpanel(8,471)
-}
-{
-xpanel("Data output", 0)
-xlabel("Data output")
-expdate = 30315
-xvalue("Date (ddmmyy)","expdate", 0,"", 0, 0 )
-exprun = 1
-xvalue("Experiment run","exprun", 0,"", 0, 0 )
-xbutton("Store voltage traces","storeVall()")
-xbutton("Store calcium traces","storeCa()")
-xbutton("Store inhibitory currents","storeInh()")
-xpanel(290,583)
+xpanel(0,414)
 }
 {
 xpanel("RunControl", 0)
@@ -41,93 +43,116 @@ xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 
 runStopIn = 1
 xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
 xbutton("Single Step","steprun()")
-t = 1000
+t = 7000
 xvalue("t","t", 2 )
-tstop = 1000
+tstop = 7000
 xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
-dt = 0.025
+dt = 0.0544891
 xvalue("dt","dt", 1,"setdt()", 0, 1 )
 steps_per_ms = 40
 xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )
 screen_update_invl = 0.05
 xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
-realtime = 14.08
+realtime = 107.24
 xvalue("Real Time","realtime", 0,"", 0, 1 )
 xpanel(0,120)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,-80,40)
+save_window_.size(0,7000,-80,40)
 scene_vector_[2] = save_window_
-{save_window_.view(0, -80, 1000, 120, 366, 18, 566.1, 179.2)}
+{save_window_.view(0, -80, 7000, 120, 366, 18, 566.1, 179.2)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,-80,40)
+save_window_.size(0,7000,-80,40)
 scene_vector_[3] = save_window_
-{save_window_.view(0, -80, 1000, 120, 372, 330, 565.2, 154)}
+{save_window_.view(0, -80, 7000, 120, 372, 330, 565.2, 154)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("Ecell.Adend[1].v( 0.5 )", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1100,0,0.65)
+save_window_.size(0,7000,0,0.0071)
 scene_vector_[4] = save_window_
-{save_window_.view(0, 0, 1100, 0.65, 366, 600, 567, 130.6)}
+{save_window_.view(0, 0, 7000, 0.0071, 366, 600, 567, 130.6)}
 graphList[2].append(save_window_)
 save_window_.save_name("graphList[2].")
 save_window_.addexpr("Ecell.Adend[1].cai( 0.5 )", 1, 1, 0.8, 0.9, 2)
 save_window_.addvar("CA3syn.ca", 2, 1, 0.8, 0.9, 2)
+save_window_.addvar("CA3syn[1].ca", 3, 1, 0.8, 0.9, 2)
+save_window_.addexpr("CA3syn[2].ca", 4, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,-80,40)
+save_window_.size(0,7000,-80,40)
 scene_vector_[5] = save_window_
-{save_window_.view(0, -80, 1000, 120, 366, 210, 565.2, 144.1)}
+{save_window_.view(0, -80, 7000, 120, 366, 210, 565.2, 144.1)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("Ecell.Adend[2].v( 0.5 )", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,-1,1)
+save_window_.size(0,7000,-1,1)
 scene_vector_[6] = save_window_
-{save_window_.view(0, -1, 1000, 2, 1146, 18, 300.6, 156.7)}
+{save_window_.view(0, -1, 7000, 2, 1146, 18, 300.6, 156.7)}
 graphList[1].append(save_window_)
 save_window_.save_name("graphList[1].")
 save_window_.addvar("istim.i", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,-1,1)
+save_window_.size(0,7000,-1,1)
 scene_vector_[7] = save_window_
-{save_window_.view(0, -1, 1000, 2, 1146, 300, 300.6, 162.1)}
+{save_window_.view(0, -1, 7000, 2, 1146, 300, 300.6, 162.1)}
 graphList[1].append(save_window_)
 save_window_.save_name("graphList[1].")
 save_window_.addvar("bstim.i", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,-1,1)
+save_window_.size(0,7000,-1,1)
 scene_vector_[8] = save_window_
-{save_window_.view(0, -1, 1000, 2, 1146, 582, 300.6, 162.1)}
+{save_window_.view(0, -1, 7000, 2, 1146, 582, 300.6, 162.1)}
 graphList[1].append(save_window_)
 save_window_.save_name("graphList[1].")
 save_window_.addvar("ostim.i", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,1000,0,1)
+save_window_.size(0,7000,0,1)
 scene_vector_[9] = save_window_
-{save_window_.view(0, 0, 1000, 1, 295, 120, 300.6, 200.8)}
+{save_window_.view(0, 0, 7000, 1, 1088, 66, 300.6, 200.8)}
 graphList[2].append(save_window_)
 save_window_.save_name("graphList[2].")
 save_window_.addvar("CA3syn.R", 1, 1, 0.8, 0.9, 2)
 save_window_.addvar("CA3syn.p", 2, 1, 0.8, 0.9, 2)
+save_window_.addexpr("CA3syn[1].p", 3, 1, 0.8, 0.9, 2)
+}
+{
+xpanel("ANsynGB (Globals)", 0)
+tau_ANsynGB = 700000
+xvalue("tau_ANsynGB","tau_ANsynGB", 1,"", 0, 0 )
+ps_ANsynGB = 0.5
+xvalue("ps_ANsynGB","ps_ANsynGB", 1,"", 0, 0 )
+gp_ANsynGB = 1600
+xvalue("gp_ANsynGB","gp_ANsynGB", 1,"", 0, 0 )
+gd_ANsynGB = 300
+xvalue("gd_ANsynGB","gd_ANsynGB", 1,"", 0, 0 )
+thp_ANsynGB = 45
+xvalue("thp_ANsynGB","thp_ANsynGB", 1,"", 0, 0 )
+thd_ANsynGB = 25
+xvalue("thd_ANsynGB","thd_ANsynGB", 1,"", 0, 0 )
+tp_ANsynGB = 20000
+xvalue("tp_ANsynGB","tp_ANsynGB", 1,"", 0, 0 )
+td_ANsynGB = 20000
+xvalue("td_ANsynGB","td_ANsynGB", 1,"", 0, 0 )
+xpanel(1123,418)
 }
 objectvar scene_vector_[1]
 {doNotify()}

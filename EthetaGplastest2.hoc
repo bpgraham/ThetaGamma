@@ -5,13 +5,17 @@
 // PC driven by multiple spiking inputs from CA3 and/or EC to dendrites.
 // Graupner-Brunel plasticity available for excitatory synapses.
 // Uses combined AMPA/NMDA/plasticity model.
-// Programmed by BPG 6-3-15
+// Programmed by BPG 9-3-15
 
 load_file("nrngui.hoc") // make graphical interface tools available to this program
 load_file("CA1PC5.hoc")
+cvode_active(1)		// needed to correct synaptic plasticity calculations at least
 
 Tstop=10000	// ms
-thetafr = 6	// Hz
+//thetafr = 6	// Hz
+//thetafr = 2	// Hz
+thetafr = 4	// Hz
+thisi = 1000 / thetafr	// ISI (ms)
 
 // RANDOM NUMBER GENERATORS
 objref r,r1,r2,r2E,r2O,r2I,r2B,r3E,r3O,r3I,r3B
@@ -32,14 +36,18 @@ Othdr=0.005	// uS
 // SPIKING INPUTS
 // CA3 and EC Netstim drives
 CA3isi = 20	// ISI (ms)
-CA3noise = 0	// ISI noise (1=negexp)
+CA3noise = 0.2	// ISI noise (1=negexp)
 ECisi = 20	// ISI (ms)
 ECnoise = 0	// ISI noise (1=negexp)
 //CA3weight = 0.02	// AMPA (strong)
-CA3weight = 0.01	// AMPA (weak)
-CA3wN = 0.01	// NMDA
+CA3wmax = 0.001	// AMPA (strong) - maximum learnt weight
+CA3wmin = 1	// AMPA - starting weight (fraction of wmax)
+CA3wN = 0.0	// NMDA
+CA3wmax2 = 0.0005	// AMPA (weak) - maximum learnt weight
+CA3wmin2 = 1	// AMPA - starting weight
+CA3wN2 = 0.0	// NMDA
 ECweight = 0.01
-ECweight2 = 0.005	// Weak, antiphase
+ECweight2 = 0.0 // Weak, antiphase
 
 
 // CREATING CELL
@@ -52,29 +60,62 @@ Ecell.soma	{
 
 
 // RECORDING AND STIMULATION
+nCA3 = 50
 objectvar ostim, istim, bstim, estim
 objectvar btheta, itheta, otheta
-objectvar CA3spikes, ECspikes, CA3ncA, CA3ncN, ECncA, ECncN
-objectvar CA3spikes2, CA3ncA2, CA3ncN2, ECspikes2, ECncA2, ECncN2
+objectvar ECspikes, ECncA, ECncN, ECspikes2, ECncA2, ECncN2
+objectvar CA3spikes[nCA3], CA3spikes2[nCA3]
+objectvar CA3syn[nCA3], CA3syn2[nCA3], CA3nc[nCA3], CA3nc2[nCA3]
 objref tvec
 
 
 // Excitatory stimulation
-objectvar CA3syn, CA3syn2
 // spiking CA3 input
-CA3spikes = new NetStim()
-//CA3spikes = new BurstStim2()
-CA3spikes.interval = CA3isi
-CA3spikes.noise = CA3noise
-//CA3spikes.start = r3E.normal(2*CA3isi, CA3isi/2)
-CA3spikes.start = 500/thetafr	// recall phase
-CA3spikes.number = Tstop / CA3isi
-//CA3spikes.burstint = 500/thetafr	// half theta period
-//CA3spikes.burstlen = 500/thetafr
-Ecell.Adend[1] CA3syn = new ANsynGB(0.5)
-CA3ncA = new NetCon(CA3spikes, CA3syn)
-CA3ncA.weight= CA3weight
-CA3syn.gNmax = CA3wN
+for i = 0,nCA3-1 {
+	//CA3spikes[i] = new NetStim()
+	CA3spikes[i] = new BurstStim2()
+	//CA3spikes[i].interval = 5*thisi	// every 5 theta
+	//CA3spikes[i].interval = 500/thetafr	// twice theta
+	CA3spikes[i].interval = CA3isi
+	//CA3spikes[i].noise = 0
+	CA3spikes[i].noise = CA3noise
+	//CA3spikes[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+	CA3spikes[i].start = 500/thetafr + r3E.normal(2*CA3isi, CA3isi/2) // recall phase
+	//CA3spikes[i].start = (thisi/2) + (thisi/4) + (thisi/2)*(i%10)	// recall phase
+	CA3spikes[i].number = Tstop / CA3isi
+	CA3spikes[i].burstint = 500/thetafr	// half theta period
+	CA3spikes[i].burstlen = 500/thetafr
+	Ecell.Adend[1] CA3syn[i] = new ANsynGB(0.5)
+	CA3nc[i] = new NetCon(CA3spikes[i], CA3syn[i])
+	CA3nc[i].weight= CA3wmax
+	//CA3syn[i].wmin = CA3wmin
+	CA3syn[i].wmin = 1	// no plasticity
+	//CA3syn[i].gNmax = CA3wN
+	CA3syn[i].gNmax = 0	// no NMDA
+}
+// Make first input the special test input
+//CA3spikes[0].gNmax = CA3wN0
+
+// second spiking CA3 input
+for i = 0,nCA3-1 {
+	//CA3spikes2[i] = new NetStim()
+	CA3spikes2[i] = new BurstStim2()
+	//CA3spikes2[i].interval = 1000/thetafr	// theta
+	CA3spikes2[i].interval = CA3isi		// gamma
+	CA3spikes2[i].noise = CA3noise
+	CA3spikes2[i].start = r3E.normal(2*CA3isi, CA3isi/2)
+	//CA3spikes2[i].start = 500/thetafr + (CA3isi)*(i%5)	// recall phase
+	CA3spikes2[i].number = Tstop / CA3isi
+	CA3spikes2[i].burstint = 500/thetafr	// half theta period
+	CA3spikes2[i].burstlen = 500/thetafr
+	Ecell.Adend[1] CA3syn2[i] = new ANsynGB(0.5)
+	CA3nc2[i] = new NetCon(CA3spikes2[i], CA3syn2[i])
+	CA3nc2[i].weight= CA3wmax2
+	//CA3syn2[i].wmin = CA3wmin2
+	CA3syn2[i].wmin = 1
+	//CA3syn2[i].gNmax = CA3wN2
+	CA3syn2[i].gNmax = 0
+}
 
 // spiking EC input
 //ECspikes = new NetStim()
@@ -167,8 +208,15 @@ proc setINamps() {
 
 // Excitatory weights
 proc setEweights() {
-	CA3ncA.weight= CA3weight
-	CA3syn.gNmax = CA3wN
+	//for i=0, nCA3-1 {
+	for i=1, nCA3-1 {
+		CA3nc[i].weight= CA3wmax
+		CA3syn[i].wmin = CA3wmin
+		CA3syn[i].gNmax = CA3wN
+		CA3nc2[i].weight= CA3wmax2
+		CA3syn2[i].wmin = CA3wmin2
+		CA3syn2[i].gNmax = CA3wN2
+	}
 	ECncA.weight= ECweight
 	ECncN.weight= ECweight
 	ECncA2.weight= ECweight2
@@ -180,12 +228,14 @@ proc setEweights() {
 proc inputGUI() {
 	xpanel("Inputs")
 	xlabel("Excitatory")
-	xpvalue("CA3 strong AMPA", &CA3ncA.weight, 1)
-	xpvalue("CA3 strong NMDA", &CA3syn.gNmax, 1)
-	xpvalue("EC strong AMPA", &ECncA.weight, 1)
-	xpvalue("EC strong NMDA", &ECncN.weight, 1)
-	xpvalue("EC weak AMPA", &ECncA2.weight, 1)
-	xpvalue("EC weak NMDA", &ECncN2.weight, 1)
+	xpvalue("CA3 strong AMPA", &CA3wmax, 1, "setEweights()")
+	xpvalue("CA3 weak AMPA", &CA3wmin, 1, "setEweights()")
+	xpvalue("CA3 NMDA", &CA3wN, 1, "setEweights()")
+	xpvalue("CA3 background strong AMPA", &CA3wmax2, 1, "setEweights()")
+	xpvalue("CA3 background weak AMPA", &CA3wmin2, 1, "setEweights()")
+	xpvalue("CA3 background NMDA", &CA3wN2, 1, "setEweights()")
+	xpvalue("EC strong", &ECweight, 1, "setEweights()")
+	xpvalue("EC weak", &ECweight2, 1, "setEweights()")
 	xlabel("Inhibitory")
 	xvalue("I", "Ithdr", 1, "setINamps()")
 	xvalue("B", "Bthdr", 1, "setINamps()")
@@ -210,7 +260,7 @@ DT = 1	// record time every 1 ms
 
 prefolder = "../../../Results/ThetaGamma"
 prestem = "run"
-expdate = 030315	// today's date
+expdate = 090315	// today's date
 exprun = 1		// run number
 
 // Store generic data

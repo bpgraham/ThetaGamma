@@ -1,0 +1,100 @@
+// Test Graupner and Brunel's bistable plasticity (BPG 25-10-12)
+// Synaptic changes in calcium in a single spine
+
+{load_file("nrngui.hoc")}
+{load_file("burst_cell3.hoc")}
+cvode_active(1)
+
+// Construct simulation
+celsius = 35
+v_init = -65
+Vrest = v_init
+
+Rm = 28000	// Migliore
+RmDend = Rm
+RmSoma = Rm
+RmAx = Rm
+
+Cm    = 1
+CmSoma= Cm
+CmAx  = Cm
+CmDend = Cm
+
+RaAll= 150	// Migliore 2005
+RaSoma=150  
+RaAx = 150
+RaSpine = 150
+
+// Set up cell
+create cell, sneck, shead
+access cell
+
+cell {	L=100 diam=2 
+	insert pas e_pas=Vrest g_pas=1/RmDend Ra=RaAll cm=CmDend
+}
+sneck { L=1.0 diam=0.125
+        insert pas e_pas=Vrest g_pas=1/RmDend Ra=RaAll cm=CmDend
+        insert cad taur_cad=14
+}
+shead { L=0.5 diam=0.5
+	insert pas e_pas=Vrest g_pas=1/RmDend Ra=RaAll cm=CmDend
+        insert cad taur_cad=14 depth_taur=0.5/2
+	insert BistableGB
+}
+connect shead(0), sneck(1)
+connect cell(1), sneck(0)
+access shead
+
+// Input stimulation and synapse
+objref inp, synA, synN, ncA, ncN
+
+inp = new BurstCell3()
+inp.stim.number = 100
+inp.stim.start = 1000
+inp.stim.interval = 200
+inp.stim.noise = 0
+inp.stim.burstint = 200
+inp.stim.burstlen = 10
+
+//shead synA = new Exp2SynPL(0.5)
+shead synA = new Exp2Syn(0.5)
+synA.tau1 = 0.5	// Spruston JPhysiol 1995
+synA.tau2 = 3	// Spruston JPhysiol 1995
+synA.e = 0
+shead synN = new NMDAca(0.5)
+synN.fCa = 0.1	// fraction of Ca current (Bloodgood & Sabatini)
+synN.tcon = 3	
+synN.tcoff = 100
+synN.mgconc = 1	// (mM) standard Mg conc
+synN.gamma = 0.08	// Larkum Science 2009 (sharpens voltage curve)
+
+ncA = new NetCon(inp.stim, synA, -20, 1, 0.0005)
+ncN = new NetCon(inp.stim, synN, -20, 1, 0.001)
+
+proc makexpane() {
+xpanel("Parameters")
+xlabel("Stimulus")
+xvalue("Start time", "inp.stim.start", 1)
+xvalue("Number of bursts", "inp.stim.number", 1)
+xvalue("Spike interval", "inp.stim.interval", 1)
+xvalue("Interval noise", "inp.stim.noise", 1)
+xvalue("Burst interval", "inp.stim.burstint", 1)
+xvalue("Burst length", "inp.stim.burstlen", 1)
+xlabel("Weights")
+xvalue("AMPA", "ncA.weight", 1)
+xvalue("NMDA", "ncN.weight", 1)
+xvalue("NMDA Ca frac", "synN.fCa", 1)
+xlabel("Plasticity")
+xvalue("Initial p", "p0_BistableGB", 1)
+xvalue("Time constant", "tau_BistableGB", 1)
+xvalue("Potentiation rate", "gp_BistableGB", 1)
+xvalue("Depression rate", "gd_BistableGB", 1)
+xvalue("Potentiation threshold", "thp_BistableGB", 1)
+xvalue("Depression threshold", "thd_BistableGB", 1)
+xpanel()
+}
+
+makexpane()
+xopen("testGBspine.ses")
+
+

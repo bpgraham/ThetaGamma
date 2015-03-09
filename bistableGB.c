@@ -30,10 +30,10 @@ extern double hoc_Exp();
 #define t _nt->_t
 #define dt _nt->_dt
 #define p0 _p[0]
-#define p _p[1]
-#define A _p[2]
-#define cai _p[3]
-#define C1 _p[4]
+#define C1 _p[1]
+#define p _p[2]
+#define A _p[3]
+#define cai _p[4]
 #define Dp _p[5]
 #define DA _p[6]
 #define v _p[7]
@@ -105,6 +105,7 @@ extern int nrn_get_mechtype();
  "tp_BistableGB", "ms",
  "td_BistableGB", "ms",
  "p0_BistableGB", "1",
+ "C1_BistableGB", "uM",
  0,0
 };
  static double A0 = 0;
@@ -137,6 +138,7 @@ static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
 "BistableGB",
  "p0_BistableGB",
  0,
+ "C1_BistableGB",
  0,
  "p_BistableGB",
  "A_BistableGB",
