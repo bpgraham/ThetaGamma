@@ -2,6 +2,7 @@
 // New 5-cpt PC model based on Tort, but using ion channels and distributions
 // from my Migliore-adapted PC model from Neural Computation (2014) paper.
 // PC driven by multiple spiking inputs from CA3 and/or EC to dendrites.
+// Rhythmic GClamp inhibition can be added to the dendrites.
 // Graupner-Brunel plasticity available for excitatory synapses.
 // Uses combined AMPA/NMDA/plasticity model.
 // Mainly set up to try to reproduce Wittenberg & Wang (2006) LTP/LTD results.
@@ -30,19 +31,26 @@ nrep = nrepmax	// number of repetitions
 // (following max CA3 weight gives an EPSC of 110pA in soma with 10 synch input spikes in Adend[1])
 // (somatic current recorded with SEClamp point process)
 CA3wmax = 0.0005	// AMPA (strong) - maximum learnt weight
-CA3wmax = 0.0002	// AMPA (strong) - maximum learnt weight (use in Adend[0])
+//CA3wmax = 0.0002	// AMPA (strong) - maximum learnt weight (use in Adend[0])
 CA3wmin = 1	// AMPA - starting weight (fraction of wmax)
 CA3wN = 0.001	// NMDA
 ECwmax = 0.0005	// AMPA (strong) - maximum learnt weight
 ECwmin = 1	// AMPA - starting weight (fraction of wmax)
-ECwN = 0.0	// NMDA
+ECwN = 0.005	// NMDA
 
 // POSTSYNAPTIC CURRENT INJECTION
-Idel = 20	// msec relative to input
+Idel = 10	// msec relative to input
 // (following gives 2 postsynaptic spikes 11ms apart when delivered in isolation)
 // (reduction of duration to 5ms elicits only a single spike)
 Iamp = 0.17	// nA
 Idur = 15	//  msec
+
+// RHYTHMIC INHIBITION
+thetafr = 5	// Hz
+thisi = 1000 / thetafr	// ISI (ms)
+Ithdr=0.01	// uS
+Bthdr=0.005	// uS
+Othdr=0.005	// uS
 
 // RECORDING AND STIMULATION
 nCA3 = 10	// approx. number of inputs generated in W&W experiments
@@ -92,6 +100,46 @@ for i=0, nrep-1 {
 	postI[i].amp = Iamp
 	postI[i].dur = Idur
 }
+							
+// Inhibitory stimulation
+objectvar ostim, istim, bstim
+objectvar btheta, itheta, otheta
+
+// BC perisomatic inhib
+istim = new GClamp()
+Ecell.soma istim.loc(0.5)
+istim.del = 0
+istim.dur = Tstop
+istim.erev = -80
+itheta = new Vector(Tstop)
+itheta.sin(thetafr, 0)
+itheta.add(1)
+itheta.mul(Ithdr)
+itheta.play(&istim.amp, 1)
+
+// BSC dendritic inhib
+bstim = new GClamp()
+Ecell.Adend[1] bstim.loc(0.5)
+bstim.del = 0
+bstim.dur = Tstop
+bstim.erev = -80
+btheta = new Vector(Tstop)
+btheta.sin(thetafr, PI)
+btheta.add(1)
+btheta.mul(Bthdr)
+btheta.play(&bstim.amp, 1)
+
+// OLM distal dendritic inhib
+ostim = new GClamp()
+Ecell.Adend[2] ostim.loc(0.5)
+ostim.del = 0
+ostim.dur = Tstop
+ostim.erev = -80
+otheta = new Vector(Tstop)
+otheta.sin(thetafr, PI)
+otheta.add(1)
+otheta.mul(Othdr)
+otheta.play(&ostim.amp, 1)
 
 
 // PARAMETER CONTROL
@@ -132,6 +180,20 @@ proc setPairs() {
 	}
 }
 
+// Inhibitory strengths
+proc setINamps() {
+	itheta.sin(thetafr, 0)
+	itheta.add(1)
+	itheta.mul(Ithdr)
+	btheta.sin(thetafr, PI)
+	btheta.add(1)
+	btheta.mul(Bthdr)
+	otheta.sin(thetafr, PI)
+	otheta.add(1)
+	otheta.mul(Othdr)
+}
+
+
 // GUI
 proc inputGUI() {
 	xpanel("Inputs")
@@ -139,6 +201,7 @@ proc inputGUI() {
 	xpvalue("Number of repetitions", &nrep, 1, "setPairs()")
 	xpvalue("Inter-pair interval", &IPI, 1, "setPairs()")	
 	xpvalue("Pre-post interval", &prepostDT, 1, "setPairs()")	
+	xpvalue("Initial delay", &pdel, 1, "setPairs()")	
 	xlabel("Presynaptic")
 	xpvalue("CA3 max AMPA", &CA3wmax, 1, "setEweights()")
 	xpvalue("CA3 min frac AMPA", &CA3wmin, 1, "setEweights()")
@@ -149,6 +212,11 @@ proc inputGUI() {
 	xlabel("Postynaptic")
 	xpvalue("Current amplitude (nA)", &Iamp, 1, "setPairs()")
 	xpvalue("Current duration (nA)", &Idur, 1, "setPairs()")
+	xlabel("Inhibitory")
+	xvalue("Theta frequency", "thetafr", 1, "setINamps()")
+	xvalue("I strength", "Ithdr", 1, "setINamps()")
+	xvalue("B strength", "Bthdr", 1, "setINamps()")
+	xvalue("O strength", "Othdr", 1, "setINamps()")
 	xpanel()
 }
 
@@ -243,6 +311,6 @@ recordCa()
 
 // Load GUI
 //load_file("Egraphics.hoc")
-//inputGUI()
+inputGUI()
 //dataGUI()
 load_file("testGBPC5_WW.ses")
