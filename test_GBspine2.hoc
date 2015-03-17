@@ -46,8 +46,9 @@ connect cell(1), sneck(0)
 access shead
 
 // Input stimulation and synapse
-objref inp, syn, ncA
+objref inp, syn, ncA, inp2
 
+// Burst stimulation
 inp = new BurstCell3()
 inp.stim.number = 100
 inp.stim.start = 1000
@@ -55,6 +56,15 @@ inp.stim.interval = 200
 inp.stim.noise = 0
 inp.stim.burstint = 200
 inp.stim.burstlen = 10
+
+// Theta-modulated, place cell stimulation
+inp2 = new PT1dStim()
+//inp2 = new NetStim()
+inp2.start = 1000
+inp2.thamp = 0
+inp2.noise = 1
+//inp2.interval = 100
+//inp2.number = 50
 
 shead syn = new ANsynGB(0.5)
 syn.tau1 = 0.5	// Spruston JPhysiol 1995
@@ -66,7 +76,8 @@ syn.tcoff = 100
 syn.mgconc = 1	// (mM) standard Mg conc
 syn.gamma = 0.08	// Larkum Science 2009 (sharpens voltage curve)
 
-ncA = new NetCon(inp.stim, syn, -20, 1, 0.0005)
+//ncA = new NetCon(inp.stim, syn, -20, 1, 0.0005)
+ncA = new NetCon(inp2, syn, -20, 1, 0.0005)
 syn.gNmax = 0.001
 
 proc makexpane() {
