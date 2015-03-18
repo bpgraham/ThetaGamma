@@ -5,13 +5,13 @@
 : 1-dimensional "place".
 : Equations from Chance J Neurosci 32(47):16693-16703, 2012.
 :   Adapted from netstim.hoc
-:   BPG 16-03-15
+:   BPG 18-03-15
 
 NEURON	{ 
   ARTIFICIAL_CELL PT1dStim
   RANGE noise, maxfr, thfreq, thphase, thamp, plx0, plsig
-  RANGE start, repeat, speed, maxdist
-  RANGE placefr, thetafr, xd, ispike, currate, curuni
+  RANGE start, nrepeat, delay, speed, maxdist, runstart
+  RANGE placefr, thetafr, xd, ispike, currate
   POINTER donotuse
 }
 
@@ -24,7 +24,8 @@ UNITS {
 
 PARAMETER {
 	start=50 (ms)	: start of first spike
-	repeat=0 (1)	: repeat run if =1
+	nrepeat=1 (1)	: number of repeat runs
+	delay=1000 (ms)	: delay between repeat runs
 	noise=0 <0,1>	: amount of randomness (0.0 - 1.0)
 	maxfr=15 (Hz)	: max frequency of spikes per synapse
 	thfreq=5 (Hz)	: modulation frequency (theta)
@@ -43,7 +44,10 @@ ASSIGNED {
 	ispike
 	donotuse
 	currate
-	curuni
+	repcount
+	runlength (ms)
+	runstart (ms)
+	runend (ms)
 	
 	placefr (Hz)	: place-determined frequency
 	thetafr (Hz)	: theta-determined frequency
@@ -57,10 +61,15 @@ PROCEDURE seed(x) {
 INITIAL {
 	on = -1 : tenatively off
 	ispike = 0
+	repcount = 0
 	xd = 0
 	interval = 1000/maxfr	: ISI (msecs)
 	placefr = 0
 	thetafr = 0
+	runstart = start
+	runlength = (maxdist/speed)*1000	: (msecs)
+	runend = runstart + runlength
+
 	if (noise < 0) {
 		noise = 0
 	}
@@ -137,13 +146,13 @@ ENDVERBATIM
 PROCEDURE next_invl() {
 	: generate potential spikes at maximum rate
 	interval = 1000/maxfr
-	event = invl(interval)
+	:event = invl(interval)
 	
-	:if (t < end) {
-	:	event = invl(interval)
-	:} else {
-	:	on = 0
-	:}
+	if (t < runend) {
+		event = invl(interval)
+	} else {
+		on = 0
+	}
 }
 
 NET_RECEIVE (w) {
@@ -166,20 +175,24 @@ NET_RECEIVE (w) {
 			net_send(0, 1)
 		}
 	}
+	if (flag == 2) { : repeat run control
+		on = 1
+		xd = 0	: reset to start of track
+		runstart = runend + delay
+		runend = runstart + runlength
+		net_send(0, 1)		: to start run
+	}
 	if (flag == 1 && on == 1) {
-		:printf("Receive t=%g flag=%g\n", t, flag)
-		:currate = rate() / maxfr
-		:curuni = unirand()
-		:if (currate > curuni) {	: accept spike
-		if (rate()/maxfr > unirand()) {	: accept spike
+		currate = rate() / maxfr
+		if (currate > unirand()) {	: accept spike
 			ispike = ispike + 1
 			net_event(t)
-			printf("Send event\n")
 		}
-		:net_event(t)
 		next_invl()
 		if (on == 1) {
 			net_send(event, 1)
+		} else {
+			net_send(delay, 2)	: wait before repeating
 		}
 	}
 }
@@ -187,8 +200,8 @@ NET_RECEIVE (w) {
 
 FUNCTION rate() (Hz) {	: instantaneous firing rate
 	rate = 0
-	if (t >= start && xd < maxdist) {
-		xd = (t-start)*speed/1000
+	if (t >= runstart && xd < maxdist) {
+		xd = (t-runstart)*speed/1000
 		
 		placefr = maxfr*exp(-(xd-plx0)^2/(2*plsig^2))
 		thetafr = thamp*cos((2*PI*thfreq*(t-start)/1000)+(2*PI*thphase/360)) + (1-thamp)

@@ -30,26 +30,30 @@ extern double hoc_Exp();
 #define t nrn_threads->_t
 #define dt nrn_threads->_dt
 #define start _p[0]
-#define repeat _p[1]
-#define noise _p[2]
-#define maxfr _p[3]
-#define thfreq _p[4]
-#define thphase _p[5]
-#define thamp _p[6]
-#define plx0 _p[7]
-#define plsig _p[8]
-#define speed _p[9]
-#define maxdist _p[10]
-#define ispike _p[11]
-#define currate _p[12]
-#define curuni _p[13]
-#define placefr _p[14]
-#define thetafr _p[15]
-#define xd _p[16]
-#define interval _p[17]
-#define event _p[18]
-#define on _p[19]
-#define _tsav _p[20]
+#define nrepeat _p[1]
+#define delay _p[2]
+#define noise _p[3]
+#define maxfr _p[4]
+#define thfreq _p[5]
+#define thphase _p[6]
+#define thamp _p[7]
+#define plx0 _p[8]
+#define plsig _p[9]
+#define speed _p[10]
+#define maxdist _p[11]
+#define ispike _p[12]
+#define currate _p[13]
+#define runstart _p[14]
+#define placefr _p[15]
+#define thetafr _p[16]
+#define xd _p[17]
+#define interval _p[18]
+#define event _p[19]
+#define on _p[20]
+#define repcount _p[21]
+#define runlength _p[22]
+#define runend _p[23]
+#define _tsav _p[24]
 #define _nd_area  *_ppvar[0]._pval
 #define donotuse	*_ppvar[2]._pval
 #define _p_donotuse	_ppvar[2]._pval
@@ -134,13 +138,15 @@ extern int nrn_get_mechtype();
 };
  static HocParmUnits _hoc_parm_units[] = {
  "start", "ms",
- "repeat", "1",
+ "nrepeat", "1",
+ "delay", "ms",
  "maxfr", "Hz",
  "thfreq", "Hz",
  "plx0", "cm",
  "plsig", "cm",
  "speed", "cm/s",
  "maxdist", "cm",
+ "runstart", "ms",
  "placefr", "Hz",
  "thetafr", "Hz",
  "xd", "cm",
@@ -164,7 +170,8 @@ extern int nrn_get_mechtype();
  "6.2.0",
 "PT1dStim",
  "start",
- "repeat",
+ "nrepeat",
+ "delay",
  "noise",
  "maxfr",
  "thfreq",
@@ -177,7 +184,7 @@ extern int nrn_get_mechtype();
  0,
  "ispike",
  "currate",
- "curuni",
+ "runstart",
  "placefr",
  "thetafr",
  "xd",
@@ -196,10 +203,11 @@ static void nrn_alloc(_prop)
 	_p = nrn_point_prop_->param;
 	_ppvar = nrn_point_prop_->dparam;
  }else{
- 	_p = nrn_prop_data_alloc(_mechtype, 21, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 25, _prop);
  	/*initialize range parameters*/
  	start = 50;
- 	repeat = 0;
+ 	nrepeat = 1;
+ 	delay = 1000;
  	noise = 0;
  	maxfr = 15;
  	thfreq = 5;
@@ -211,7 +219,7 @@ static void nrn_alloc(_prop)
  	maxdist = 200;
   }
  	_prop->param = _p;
- 	_prop->param_size = 21;
+ 	_prop->param_size = 25;
   if (!nrn_point_prop_) {
  	_ppvar = nrn_prop_datum_alloc(_mechtype, 4, _prop);
   }
@@ -367,7 +375,12 @@ static double _hoc_noiseFromRandom(_vptr) void* _vptr; {
  
 static int  next_invl (  )  {
    interval = 1000.0 / maxfr ;
-   event = invl ( _threadargscomma_ interval ) ;
+   if ( t < runend ) {
+     event = invl ( _threadargscomma_ interval ) ;
+     }
+   else {
+     on = 0.0 ;
+     }
     return 0; }
  
 static double _hoc_next_invl(_vptr) void* _vptr; {
@@ -400,15 +413,25 @@ static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; do
        artcell_net_send ( _tqitem, _args, _pnt, t +  0.0 , 1.0 ) ;
        }
      }
+   if ( _lflag  == 2.0 ) {
+     on = 1.0 ;
+     xd = 0.0 ;
+     runstart = runend + delay ;
+     runend = runstart + runlength ;
+     artcell_net_send ( _tqitem, _args, _pnt, t +  0.0 , 1.0 ) ;
+     }
    if ( _lflag  == 1.0  && on  == 1.0 ) {
-     if ( rate ( _threadargs_ ) / maxfr > unirand ( _threadargs_ ) ) {
+     currate = rate ( _threadargs_ ) / maxfr ;
+     if ( currate > unirand ( _threadargs_ ) ) {
        ispike = ispike + 1.0 ;
        net_event ( _pnt, t ) ;
-       printf ( "Send event\n" ) ;
        }
      next_invl ( _threadargs_ ) ;
      if ( on  == 1.0 ) {
        artcell_net_send ( _tqitem, _args, _pnt, t +  event , 1.0 ) ;
+       }
+     else {
+       artcell_net_send ( _tqitem, _args, _pnt, t +  delay , 2.0 ) ;
        }
      }
    } }
@@ -416,8 +439,8 @@ static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; do
 double rate (  )  {
    double _lrate;
  _lrate = 0.0 ;
-   if ( t >= start  && xd < maxdist ) {
-     xd = ( t - start ) * speed / 1000.0 ;
+   if ( t >= runstart  && xd < maxdist ) {
+     xd = ( t - runstart ) * speed / 1000.0 ;
      placefr = maxfr * exp ( - pow( ( xd - plx0 ) , 2.0 ) / ( 2.0 * pow( plsig , 2.0 ) ) ) ;
      thetafr = thamp * cos ( ( 2.0 * PI * thfreq * ( t - start ) / 1000.0 ) + ( 2.0 * PI * thphase / 360.0 ) ) + ( 1.0 - thamp ) ;
      _lrate = placefr * thetafr ;
@@ -456,10 +479,14 @@ static void initmodel() {
  {
    on = - 1.0 ;
    ispike = 0.0 ;
+   repcount = 0.0 ;
    xd = 0.0 ;
    interval = 1000.0 / maxfr ;
    placefr = 0.0 ;
    thetafr = 0.0 ;
+   runstart = start ;
+   runlength = ( maxdist / speed ) * 1000.0 ;
+   runend = runstart + runlength ;
    if ( noise < 0.0 ) {
      noise = 0.0 ;
      }
