@@ -139,7 +139,7 @@ NET_RECEIVE (w) {
 		}
 	}
 	if (flag == 2) { : burst control
-		if (on == 0) { : start burst
+		if (on == 0 && ispike < number) { : start burst
 			on = 1
 			net_send(0, 1)		: to start burst
 			net_send(burstlen, 2)

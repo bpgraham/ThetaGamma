@@ -1,0 +1,160 @@
+// Data displays
+// BPG 19-3-15
+
+//########################################################################
+// RASTER PLOT AND SPIKE HISTOGRAMS
+
+objref vecPC, vecCA3, vecEC, spikesPC, spikesCA3, spikesEC
+objref graster, vbox, vbox2, hbox
+objref ghistPC, ghistCA3, ghistEC, vboxh
+objref spiketPC, spiketCA3, spiketEC, sphistPC, sphistCA3, sphistEC, thist
+
+DT = 1	// record time every 1 ms
+HW = 5	// 5 ms bins for spike histograms
+STH = 0	// start time for binning
+ENDT = 100000
+fTH = 0	// 1 = accumulate spikes for a theta cycle
+theta = 200	// ms (5 Hz)
+
+if (nCA3 <= 10) {
+	// for small net (large, thick marks)
+	brusher=4
+	marksize=6
+} else {
+	// for large net (small, thin marks)
+	brusher=2
+	marksize=1
+}
+
+
+// Set up spike time recordings via APCs
+proc preprasterplot() {
+
+	spikesCA3 = new List()
+	spikesEC = new List()
+
+	for i = 0,nCA3-1 {
+		vecCA3 = new Vector()
+		CA3nc[i].record(vecCA3)
+		spikesCA3.append(vecCA3)
+	}
+	for i = 0,nEC-1 {
+		vecEC = new Vector()
+		ECnc[i].record(vecEC)
+		spikesEC.append(vecEC)
+	}
+
+}
+
+
+// Raster plot of spike times
+proc showraster(){local i localobj spikeyCA3, spikeyEC
+
+	graster = new Graph(0) 
+	graster.erase_all()
+	
+	for i = 0,nCA3-1 {
+		spikeyCA3 = new Vector()
+		spikeyCA3 = spikesCA3.object(i).c //creates a vector of size as the i-th vector in the list
+		spikeyCA3.fill(nEC+i+1) // fill all entries with the number i+1
+		spikeyCA3.mark(graster, spikesCA3.object(i), "|", marksize, 1, brusher)
+	}
+	for i = 0,nEC-1 {
+		spikeyEC = new Vector()
+		spikeyEC = spikesEC.object(i).c //creates a vector of size as the i-th vector in the list
+		spikeyEC.fill(i+1) // fill all entries with the number i+1
+		spikeyEC.mark(graster, spikesEC.object(i), "|", marksize, 2, brusher)
+	}
+
+	graster.view(0, 0, t, nCA3+nEC+1, 100, 100, 1000, 600)
+				
+}
+
+
+// Modulus function for normalising spike times to theta period
+func mod() {
+	return $1%theta
+}
+
+
+// Histogram of spike times
+proc showhist(){local i
+
+	ghistEC = new Graph(0) 
+	ghistEC.erase_all()
+	ghistCA3 = new Graph(0) 
+	ghistCA3.erase_all()
+
+	spiketEC = new Vector()
+	spiketCA3 = new Vector()
+	
+	for i = 0,nCA3-1 {
+		spiketCA3.append(spikesCA3.object(i)) // accumulate spikes from all cells
+	}
+	for i = 0,nEC-1 {
+		spiketEC.append(spikesEC.object(i)) // accumulate spikes from all cells
+	}
+	
+	if (fTH == 1) {
+		STH = 0
+		ENDT = theta
+		// calculate theta period as time between one pair of O cell spikes
+		//thsize = spikes2.object(0).size()
+		//theta = spiket2.x[thsize-1] - spiket2.x[thsize-2]
+		spiketEC.apply("mod")
+		spiketCA3.apply("mod")
+	
+	} 
+	//else {
+	//	STH = 500
+	//	ENDT = t
+	//}
+		
+	sphistEC = spiketEC.histogram(STH, ENDT, HW)		// E
+	sphistCA3 = spiketCA3.histogram(STH, ENDT, HW)		// I
+	
+	thist = new Vector(sphistEC.size())
+	thist.indgen(STH, HW)
+
+	sphistEC.plot(ghistEC, thist)
+	sphistCA3.plot(ghistCA3, thist)
+
+	vboxh = new VBox()
+	vboxh.intercept(1)	//all following creations go into the "vbox" box
+
+	ghistEC.label(ENDT-(ENDT/10), sphistEC.max()-10, "EC")
+	ghistEC.view(STH, 0, ENDT, sphistEC.max(), 200, 0, 500, 150)
+	ghistCA3.view(STH, 0, ENDT, sphistCA3.max(), 200, 150, 500, 150)
+	
+	vboxh.intercept(0)	//ends intercept mode
+	vboxh.map("Spike histograms", 200, 200, 500, 300)	//draw the box and its contents
+
+}
+
+
+
+// Store spike times
+
+proc storespikes() { local i, j
+	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
+	fo = new File(fno)
+	fo.wopen()
+      	for i = 0,$4-1 {
+		for j=0, $o5.object(i).size-1 {
+        		fo.printf("%g %g\n", $o5.object(i).x[j], i)
+      		}
+      	}
+      	fo.close()
+
+}
+
+proc storespikesall() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storespikes(ff, fstem, "ECsp", nEC, spikesEC)
+	storespikes(ff, fstem, "CA3sp", nCA3, spikesCA3)
+}
+
+
+

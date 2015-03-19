@@ -368,7 +368,7 @@ static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; do
        }
      }
    if ( _lflag  == 2.0 ) {
-     if ( on  == 0.0 ) {
+     if ( on  == 0.0  && ispike < number ) {
        on = 1.0 ;
        artcell_net_send ( _tqitem, _args, _pnt, t +  0.0 , 1.0 ) ;
        artcell_net_send ( _tqitem, _args, _pnt, t +  burstlen , 2.0 ) ;
