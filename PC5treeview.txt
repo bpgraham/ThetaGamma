@@ -1,0 +1,686 @@
+5 sections; 5 segments
+
+* 1 real cells (1 encapsulated in 1 distinct objects of 1 classes)
+    * 1 PCell5
+        * PCell5[0] root PCell5[0].soma
+            5 sections; 5 segments
+            * 1 distinct values of nseg
+                Longest dx is 200 at PCell5[0].Bdend with nseg=1
+                nseg consistent under assumption of dx=200 and nseg=2*int(L/dx/2)+1
+                Greatest dlambda is 0.613996 at PCell5[0].Bdend with nseg=1
+                nseg consistent under assumption of dlambda=0.6
+            * 14 inserted mechanisms
+                Ra = 150
+                cm = 1
+                * pas
+                    g_pas = 3.57143e-05
+                    * 5 e_pas
+                        PCell5[0].Bdend.e_pas = -92.8179
+                        PCell5[0].Adend[0].e_pas = -91.4552
+                        PCell5[0].soma.e_pas = -66.0387
+                        PCell5[0].Adend[1].e_pas = -50.0339
+                        PCell5[0].Adend[2].e_pas = -49.136
+                ena = 55
+                ek = -90
+                ca_ion
+                cad
+                gkbar_kmAHP = 0.001
+                * carF
+                    gcabar_carF = 0.03
+                    eca_carF = 10
+                    vha_carF = -30
+                    ka_carF = -6.7
+                    ta_carF = 3.6
+                    vhi_carF = -65
+                    ki_carF = 11.8
+                    ti_carF = 20
+                * hd
+                    * 5 ghdbar_hd
+                        PCell5[0].soma.ghdbar_hd = 5e-05
+                        PCell5[0].Adend[0].ghdbar_hd = 0.0001925
+                        PCell5[0].Bdend.ghdbar_hd = 0.0002
+                        PCell5[0].Adend[1].ghdbar_hd = 0.0004175
+                        PCell5[0].Adend[2].ghdbar_hd = 0.000575
+                    * 2 vhalfl_hd
+                        2 vhalfl_hd = -81
+                        3 vhalfl_hd = -73
+                * kad
+                    * 3 gkabar_kad
+                        2 gkabar_kad = 0
+                        PCell5[0].Adend[1].gkabar_kad = 0.1035
+                        PCell5[0].Adend[2].gkabar_kad = 0.135
+                * kap
+                    * 4 gkabar_kap
+                        2 gkabar_kap = 0
+                        PCell5[0].soma.gkabar_kap = 0.03
+                        PCell5[0].Adend[0].gkabar_kap = 0.0585
+                        PCell5[0].Bdend.gkabar_kap = 0.06
+                gkdrbar_kdr = 0.01
+                * na3
+                    sh_na3 = 0
+                    * 2 gbar_na3
+                        4 gbar_na3 = 0.015
+                        PCell5[0].soma.gbar_na3 = 0.025
+                    * 5 ar_na3
+                        PCell5[0].Adend[2].ar_na3 = 0.5
+                        PCell5[0].Adend[1].ar_na3 = 0.65
+                        PCell5[0].Bdend.ar_na3 = 0.857143
+                        PCell5[0].Adend[0].ar_na3 = 0.864286
+                        PCell5[0].soma.ar_na3 = 1
+            * 5 subsets with constant parameters
+                * ModelViewParmSubset[12] (5 sections)
+                    Ra = 150
+                    cm = 1
+                    g_pas = 3.57143e-05
+                    ena = 55
+                    ek = -90
+                    gkbar_kmAHP = 0.001
+                    gcabar_carF = 0.03
+                    eca_carF = 10
+                    vha_carF = -30
+                    ka_carF = -6.7
+                    ta_carF = 3.6
+                    vhi_carF = -65
+                    ki_carF = 11.8
+                    ti_carF = 20
+                    gkdrbar_kdr = 0.01
+                    sh_na3 = 0
+                * ModelViewParmSubset[13] (4 sections)
+                    gbar_na3 = 0.015
+                * ModelViewParmSubset[14] (2 sections)
+                    vhalfl_hd = -81
+                    gkabar_kap = 0
+                * ModelViewParmSubset[15] (3 sections)
+                    vhalfl_hd = -73
+                * ModelViewParmSubset[16] (2 sections)
+                    gkabar_kad = 0
+            * 5 sections with unique parameters
+                * PCell5[0].Bdend {
+                        e_pas = -92.8179
+                        ghdbar_hd = 0.0002
+                        gkabar_kap = 0.06
+                        ar_na3 = 0.857143
+                    }
+                * PCell5[0].Adend[0] {
+                        e_pas = -91.4552
+                        ghdbar_hd = 0.0001925
+                        gkabar_kap = 0.0585
+                        ar_na3 = 0.864286
+                    }
+                * PCell5[0].soma {
+                        e_pas = -66.0387
+                        ghdbar_hd = 5e-05
+                        gkabar_kap = 0.03
+                        gbar_na3 = 0.025
+                        ar_na3 = 1
+                    }
+                * PCell5[0].Adend[1] {
+                        e_pas = -50.0339
+                        ghdbar_hd = 0.0004175
+                        gkabar_kad = 0.1035
+                        ar_na3 = 0.65
+                    }
+                * PCell5[0].Adend[2] {
+                        e_pas = -49.136
+                        ghdbar_hd = 0.000575
+                        gkabar_kad = 0.135
+                        ar_na3 = 0.5
+                    }
+            * 33 Point Processes
+                * 6 Exp2Syn
+                    tau1 = 0.5
+                    * 3 tau2
+                        3 tau2 = 3
+                        2 tau2 = 10
+                        1 tau2 = 20
+                    * 2 e
+                        3 e = -80
+                        3 e = 0
+                * 20 ANsynGB
+                    tau1 = 0.5
+                    tau2 = 3
+                    e = 0
+                    * 2 wmin
+                        10 wmin = 0.2
+                        10 wmin = 1
+                    fCa = 0.1
+                    tcon = 3
+                    tcoff = 150
+                    enmda = 0
+                    * 2 gNmax
+                        10 gNmax = 0.001
+                        10 gNmax = 0.005
+                    mgconc = 1
+                    eta = 0.33
+                    gamma = 0.06
+                    vol = 1
+                    taurca = 28.6
+                    bcap = 17
+                    cainf = 0.0001
+                    * 2 p0
+                        10 p0 = 0
+                        10 p0 = 0.5
+                * 1 Exp2SynGB
+                    tau1 = 0.5
+                    tau2 = 3
+                    e = 0
+                    wmin = 0.2
+                * 3 GClamp
+                    del = 0
+                    dur = 10000
+                    amp = 0
+                    erev = -80
+                * 1 NMDA
+                    tcon = 2.3
+                    tcoff = 100
+                    enmda = 0
+                    gNMDAmax = 1
+                    tauD = 800
+                    tauF = 800
+                    util = 0.3
+                * 2 NMDAca
+                    fCa = 0.1
+                    tcon = 3
+                    tcoff = 100
+                    enmda = 0
+                    gNMDAmax = 1
+                    mgconc = 1
+                    eta = 0.33
+                    * 2 gamma
+                        1 gamma = 0.06
+                        1 gamma = 0.08
+        * PCell5
+            5 sections; 5 segments
+            * 1 distinct values of nseg
+                Longest dx is 200 at PCell5[0].Bdend with nseg=1
+                nseg consistent under assumption of dx=200 and nseg=2*int(L/dx/2)+1
+                Greatest dlambda is 0.613996 at PCell5[0].Bdend with nseg=1
+                nseg consistent under assumption of dlambda=0.6
+            * 14 inserted mechanisms
+                Ra = 150
+                cm = 1
+                * pas
+                    g_pas = 3.57143e-05
+                    * 5 e_pas
+                        PCell5[0].Bdend.e_pas = -92.8179
+                        PCell5[0].Adend[0].e_pas = -91.4552
+                        PCell5[0].soma.e_pas = -66.0387
+                        PCell5[0].Adend[1].e_pas = -50.0339
+                        PCell5[0].Adend[2].e_pas = -49.136
+                ena = 55
+                ek = -90
+                ca_ion
+                cad
+                gkbar_kmAHP = 0.001
+                * carF
+                    gcabar_carF = 0.03
+                    eca_carF = 10
+                    vha_carF = -30
+                    ka_carF = -6.7
+                    ta_carF = 3.6
+                    vhi_carF = -65
+                    ki_carF = 11.8
+                    ti_carF = 20
+                * hd
+                    * 5 ghdbar_hd
+                        PCell5[0].soma.ghdbar_hd = 5e-05
+                        PCell5[0].Adend[0].ghdbar_hd = 0.0001925
+                        PCell5[0].Bdend.ghdbar_hd = 0.0002
+                        PCell5[0].Adend[1].ghdbar_hd = 0.0004175
+                        PCell5[0].Adend[2].ghdbar_hd = 0.000575
+                    * 2 vhalfl_hd
+                        2 vhalfl_hd = -81
+                        3 vhalfl_hd = -73
+                * kad
+                    * 3 gkabar_kad
+                        2 gkabar_kad = 0
+                        PCell5[0].Adend[1].gkabar_kad = 0.1035
+                        PCell5[0].Adend[2].gkabar_kad = 0.135
+                * kap
+                    * 4 gkabar_kap
+                        2 gkabar_kap = 0
+                        PCell5[0].soma.gkabar_kap = 0.03
+                        PCell5[0].Adend[0].gkabar_kap = 0.0585
+                        PCell5[0].Bdend.gkabar_kap = 0.06
+                gkdrbar_kdr = 0.01
+                * na3
+                    sh_na3 = 0
+                    * 2 gbar_na3
+                        4 gbar_na3 = 0.015
+                        PCell5[0].soma.gbar_na3 = 0.025
+                    * 5 ar_na3
+                        PCell5[0].Adend[2].ar_na3 = 0.5
+                        PCell5[0].Adend[1].ar_na3 = 0.65
+                        PCell5[0].Bdend.ar_na3 = 0.857143
+                        PCell5[0].Adend[0].ar_na3 = 0.864286
+                        PCell5[0].soma.ar_na3 = 1
+            * 5 subsets with constant parameters
+                * ModelViewParmSubset[31] (5 sections)
+                    Ra = 150
+                    cm = 1
+                    g_pas = 3.57143e-05
+                    ena = 55
+                    ek = -90
+                    gkbar_kmAHP = 0.001
+                    gcabar_carF = 0.03
+                    eca_carF = 10
+                    vha_carF = -30
+                    ka_carF = -6.7
+                    ta_carF = 3.6
+                    vhi_carF = -65
+                    ki_carF = 11.8
+                    ti_carF = 20
+                    gkdrbar_kdr = 0.01
+                    sh_na3 = 0
+                * ModelViewParmSubset[32] (4 sections)
+                    gbar_na3 = 0.015
+                * ModelViewParmSubset[33] (2 sections)
+                    vhalfl_hd = -81
+                    gkabar_kap = 0
+                * ModelViewParmSubset[34] (3 sections)
+                    vhalfl_hd = -73
+                * ModelViewParmSubset[35] (2 sections)
+                    gkabar_kad = 0
+            * 5 sections with unique parameters
+                * PCell5[0].Bdend {
+                        e_pas = -92.8179
+                        ghdbar_hd = 0.0002
+                        gkabar_kap = 0.06
+                        ar_na3 = 0.857143
+                    }
+                * PCell5[0].Adend[0] {
+                        e_pas = -91.4552
+                        ghdbar_hd = 0.0001925
+                        gkabar_kap = 0.0585
+                        ar_na3 = 0.864286
+                    }
+                * PCell5[0].soma {
+                        e_pas = -66.0387
+                        ghdbar_hd = 5e-05
+                        gkabar_kap = 0.03
+                        gbar_na3 = 0.025
+                        ar_na3 = 1
+                    }
+                * PCell5[0].Adend[1] {
+                        e_pas = -50.0339
+                        ghdbar_hd = 0.0004175
+                        gkabar_kad = 0.1035
+                        ar_na3 = 0.65
+                    }
+                * PCell5[0].Adend[2] {
+                        e_pas = -49.136
+                        ghdbar_hd = 0.000575
+                        gkabar_kad = 0.135
+                        ar_na3 = 0.5
+                    }
+            * 33 Point Processes
+                * 6 Exp2Syn
+                    tau1 = 0.5
+                    * 3 tau2
+                        3 tau2 = 3
+                        2 tau2 = 10
+                        1 tau2 = 20
+                    * 2 e
+                        3 e = -80
+                        3 e = 0
+                * 20 ANsynGB
+                    tau1 = 0.5
+                    tau2 = 3
+                    e = 0
+                    * 2 wmin
+                        10 wmin = 0.2
+                        10 wmin = 1
+                    fCa = 0.1
+                    tcon = 3
+                    tcoff = 150
+                    enmda = 0
+                    * 2 gNmax
+                        10 gNmax = 0.001
+                        10 gNmax = 0.005
+                    mgconc = 1
+                    eta = 0.33
+                    gamma = 0.06
+                    vol = 1
+                    taurca = 28.6
+                    bcap = 17
+                    cainf = 0.0001
+                    * 2 p0
+                        10 p0 = 0
+                        10 p0 = 0.5
+                * 1 Exp2SynGB
+                    tau1 = 0.5
+                    tau2 = 3
+                    e = 0
+                    wmin = 0.2
+                * 3 GClamp
+                    del = 0
+                    dur = 10000
+                    amp = 0
+                    erev = -80
+                * 1 NMDA
+                    tcon = 2.3
+                    tcoff = 100
+                    enmda = 0
+                    gNMDAmax = 1
+                    tauD = 800
+                    tauF = 800
+                    util = 0.3
+                * 2 NMDAca
+                    fCa = 0.1
+                    tcon = 3
+                    tcoff = 100
+                    enmda = 0
+                    gNMDAmax = 1
+                    mgconc = 1
+                    eta = 0.33
+                    * 2 gamma
+                        1 gamma = 0.06
+                        1 gamma = 0.08
+* 20 artificial cells of 2 base classes
+    * 10 PT1dStim
+        start = 500
+        nrepeat = 1
+        delay = 1000
+        noise = 1
+        maxfr = 8
+        thfreq = 5
+        thphase = 0
+        thamp = 1
+        * 10 plx0
+            1 plx0 = 97.5067
+            1 plx0 = 99.2371
+            1 plx0 = 99.361
+            1 plx0 = 99.875
+            1 plx0 = 101.555
+            1 plx0 = 101.822
+            1 plx0 = 102.364
+            1 plx0 = 102.525
+            1 plx0 = 102.941
+            1 plx0 = 103.05
+        * 10 plsig
+            1 plsig = 6.45241
+            1 plsig = 7.00811
+            1 plsig = 7.91396
+            1 plsig = 8.43208
+            1 plsig = 8.80469
+            1 plsig = 9.30319
+            1 plsig = 10.4531
+            1 plsig = 10.4803
+            1 plsig = 11.5996
+            1 plsig = 13.1833
+        speed = 40
+        maxdist = 200
+    * 10 BurstStim2
+        interval = 200
+        number = 10000
+        start = 2500
+        noise = 0
+        burstint = 5000
+        burstlen = 1000
+    Global parameters for Artificial Cells
+* 20 NetCon objects
+    * 2 weight
+        10 weight = 0.0005
+        10 weight = 0.005
+    delay = 1
+    threshold = 10
+0 LinearMechanism objects
+
+* Density Mechanisms
+    * Mechanisms in use
+        Ra
+        capacitance
+        pas
+        na_ion
+        k_ion
+        ca_ion
+        cad
+        kmAHP
+        carF
+        hd
+        kad
+        kap
+        kdr
+        na3
+    * Homogeneous Parameters
+        Ra = 150
+        cm = 1
+        g_pas = 3.57143e-05
+        ena = 55
+        ek = -90
+        gkbar_kmAHP = 0.001
+        gcabar_carF = 0.03
+        eca_carF = 10
+        vha_carF = -30
+        ka_carF = -6.7
+        ta_carF = 3.6
+        vhi_carF = -65
+        ki_carF = 11.8
+        ti_carF = 20
+        gkdrbar_kdr = 0.01
+        sh_na3 = 0
+    * Heterogeneous Parameters
+        * 5 e_pas
+            PCell5[0].Bdend.e_pas = -92.8179
+            PCell5[0].Adend[0].e_pas = -91.4552
+            PCell5[0].soma.e_pas = -66.0387
+            PCell5[0].Adend[1].e_pas = -50.0339
+            PCell5[0].Adend[2].e_pas = -49.136
+        * 5 ghdbar_hd
+            PCell5[0].soma.ghdbar_hd = 5e-05
+            PCell5[0].Adend[0].ghdbar_hd = 0.0001925
+            PCell5[0].Bdend.ghdbar_hd = 0.0002
+            PCell5[0].Adend[1].ghdbar_hd = 0.0004175
+            PCell5[0].Adend[2].ghdbar_hd = 0.000575
+        * 2 vhalfl_hd
+            2 vhalfl_hd = -81
+            3 vhalfl_hd = -73
+        * 3 gkabar_kad
+            2 gkabar_kad = 0
+            PCell5[0].Adend[1].gkabar_kad = 0.1035
+            PCell5[0].Adend[2].gkabar_kad = 0.135
+        * 4 gkabar_kap
+            2 gkabar_kap = 0
+            PCell5[0].soma.gkabar_kap = 0.03
+            PCell5[0].Adend[0].gkabar_kap = 0.0585
+            PCell5[0].Bdend.gkabar_kap = 0.06
+        * 2 gbar_na3
+            4 gbar_na3 = 0.015
+            PCell5[0].soma.gbar_na3 = 0.025
+        * 5 ar_na3
+            PCell5[0].Adend[2].ar_na3 = 0.5
+            PCell5[0].Adend[1].ar_na3 = 0.65
+            PCell5[0].Bdend.ar_na3 = 0.857143
+            PCell5[0].Adend[0].ar_na3 = 0.864286
+            PCell5[0].soma.ar_na3 = 1
+    * Global parameters for density mechanisms
+        * na_ion
+            nai0_na_ion = 10
+            nao0_na_ion = 140
+        * k_ion
+            ki0_k_ion = 54.4
+            ko0_k_ion = 2.5
+        * ca_ion
+            cai0_ca_ion = 5e-05
+            cao0_ca_ion = 2
+        * cad
+            depth_cad = 0.1
+            taur_cad = 28.6
+            bcap_cad = 17
+            cainf_cad = 0.0001
+        * kmAHP
+            d1_kmAHP = 0.84
+            d2_kmAHP = 1
+            k1_kmAHP = 0.18
+            k2_kmAHP = 0.011
+            bbar_kmAHP = 0.28
+            abar_kmAHP = 0.48
+            oinf_kmAHP = 1.55828e-05
+            tau_kmAHP = 3.57162
+        * hd
+            ehd_hd = -30
+            kl_hd = -8
+            vhalft_hd = -75
+            a0t_hd = 0.011
+            zetat_hd = 2.2
+            gmt_hd = 0.4
+            q10_hd = 4.5
+            qtl_hd = 1
+            linf_hd = 0.119203
+            taul_hd = 28.465
+        * kad
+            vhalfn_kad = -1
+            vhalfl_kad = -56
+            a0l_kad = 0.05
+            a0n_kad = 0.1
+            zetan_kad = -1.8
+            zetal_kad = 3
+            gmn_kad = 0.39
+            gml_kad = 1
+            lmin_kad = 2
+            nmin_kad = 0.2
+            pw_kad = -1
+            tq_kad = -40
+            qq_kad = 5
+            q10_kad = 5
+            qtl_kad = 1
+            ninf_kad = 0.00119159
+            linf_kad = 0.734315
+            taul_kad = 2
+            taun_kad = 0.2
+        * kap
+            vhalfn_kap = 11
+            vhalfl_kap = -56
+            a0l_kap = 0.05
+            a0n_kap = 0.05
+            zetan_kap = -1.5
+            zetal_kap = 3
+            gmn_kap = 0.55
+            gml_kap = 1
+            lmin_kap = 2
+            nmin_kap = 0.1
+            pw_kap = -1
+            tq_kap = -40
+            qq_kap = 5
+            q10_kap = 5
+            qtl_kap = 1
+            ninf_kap = 0.000796168
+            linf_kap = 0.734315
+            taul_kap = 2
+            taun_kap = 0.137222
+        * kdr
+            vhalfn_kdr = 13
+            a0n_kdr = 0.02
+            zetan_kdr = -3
+            gmn_kdr = 0.7
+            nmax_kdr = 2
+            q10_kdr = 1
+            ninf_kdr = 0.000149094
+            taun_kdr = 3.55601
+        * na3
+            tha_na3 = -30
+            qa_na3 = 7.2
+            Ra_na3 = 0.4
+            Rb_na3 = 0.124
+            thi1_na3 = -45
+            thi2_na3 = -45
+            qd_na3 = 1.5
+            qg_na3 = 1.5
+            mmin_na3 = 0.02
+            hmin_na3 = 0.5
+            q10_na3 = 2
+            Rg_na3 = 0.01
+            Rd_na3 = 0.03
+            qq_na3 = 10
+            tq_na3 = -55
+            thinf_na3 = -50
+            qinf_na3 = 4
+            vhalfs_na3 = -60
+            a0s_na3 = 0.0003
+            zetas_na3 = 12
+            gms_na3 = 0.2
+            smax_na3 = 10
+            vvh_na3 = -58
+            vvs_na3 = 2
+            minf_na3 = 0.0243653
+            hinf_na3 = 0.977023
+            mtau_na3 = 0.104061
+            htau_na3 = 2.33257
+            sinf_na3 = 0.985344
+            taus_na3 = 1920.92
+    KSChan definitions for density mechanisms
+* 33 point processes (30 can receive events) of 6 base classes
+    * 33 Point Processes
+        * 6 Exp2Syn
+            tau1 = 0.5
+            * 3 tau2
+                3 tau2 = 3
+                2 tau2 = 10
+                1 tau2 = 20
+            * 2 e
+                3 e = -80
+                3 e = 0
+        * 20 ANsynGB
+            tau1 = 0.5
+            tau2 = 3
+            e = 0
+            * 2 wmin
+                10 wmin = 0.2
+                10 wmin = 1
+            fCa = 0.1
+            tcon = 3
+            tcoff = 150
+            enmda = 0
+            * 2 gNmax
+                10 gNmax = 0.001
+                10 gNmax = 0.005
+            mgconc = 1
+            eta = 0.33
+            gamma = 0.06
+            vol = 1
+            taurca = 28.6
+            bcap = 17
+            cainf = 0.0001
+            * 2 p0
+                10 p0 = 0
+                10 p0 = 0.5
+        * 1 Exp2SynGB
+            tau1 = 0.5
+            tau2 = 3
+            e = 0
+            wmin = 0.2
+        * 3 GClamp
+            del = 0
+            dur = 10000
+            amp = 0
+            erev = -80
+        * 1 NMDA
+            tcon = 2.3
+            tcoff = 100
+            enmda = 0
+            gNMDAmax = 1
+            tauD = 800
+            tauF = 800
+            util = 0.3
+        * 2 NMDAca
+            fCa = 0.1
+            tcon = 3
+            tcoff = 100
+            enmda = 0
+            gNMDAmax = 1
+            mgconc = 1
+            eta = 0.33
+            * 2 gamma
+                1 gamma = 0.06
+                1 gamma = 0.08
+    * Global parameters for Point Processes
+        * ANsynGB
+            tau_ANsynGB = 700000
+            ps_ANsynGB = 0.5
+            gp_ANsynGB = 1600
+            gd_ANsynGB = 300
+            thp_ANsynGB = 5
+            thd_ANsynGB = 3
+            tp_ANsynGB = 20000
+            td_ANsynGB = 20000
+    KSChan definitions for Point Processes
