@@ -50,30 +50,35 @@ extern double hoc_Exp();
 #define iN _p[18]
 #define g _p[19]
 #define gN _p[20]
-#define A _p[21]
-#define B _p[22]
-#define W _p[23]
-#define aN _p[24]
-#define bN _p[25]
-#define ca _p[26]
-#define p _p[27]
-#define R _p[28]
-#define factor _p[29]
-#define facN _p[30]
-#define wgtN _p[31]
-#define cadrive _p[32]
-#define C1 _p[33]
-#define DA _p[34]
-#define DB _p[35]
-#define DW _p[36]
-#define DaN _p[37]
-#define DbN _p[38]
-#define Dca _p[39]
-#define Dp _p[40]
-#define DR _p[41]
-#define v _p[42]
-#define _g _p[43]
-#define _tsav _p[44]
+#define camax _p[21]
+#define capksum _p[22]
+#define capkn _p[23]
+#define A _p[24]
+#define B _p[25]
+#define W _p[26]
+#define aN _p[27]
+#define bN _p[28]
+#define ca _p[29]
+#define p _p[30]
+#define R _p[31]
+#define factor _p[32]
+#define facN _p[33]
+#define wgtN _p[34]
+#define cadrive _p[35]
+#define C1 _p[36]
+#define caprev _p[37]
+#define caprev2 _p[38]
+#define DA _p[39]
+#define DB _p[40]
+#define DW _p[41]
+#define DaN _p[42]
+#define DbN _p[43]
+#define Dca _p[44]
+#define Dp _p[45]
+#define DR _p[46]
+#define v _p[47]
+#define _g _p[48]
+#define _tsav _p[49]
 #define _nd_area  *_ppvar[0]._pval
  
 #if MAC
@@ -90,6 +95,7 @@ extern double hoc_Exp();
  /* external NEURON variables */
  /* declaration of user functions */
  static double _hoc_heavi();
+ static double _hoc_trackca();
  static int _mechtype;
 extern int nrn_get_mechtype();
  extern Prop* nrn_point_prop_;
@@ -125,6 +131,7 @@ extern int nrn_get_mechtype();
  "has_loc", _hoc_has_loc,
  "get_loc", _hoc_get_loc_pnt,
  "heavi", _hoc_heavi,
+ "trackca", _hoc_trackca,
  0, 0
 };
 #define heavi heavi_ANsynGB
@@ -187,6 +194,9 @@ extern int nrn_get_mechtype();
  "iN", "nA",
  "g", "uS",
  "gN", "uS",
+ "camax", "uM",
+ "capksum", "uM",
+ "capkn", "1",
  0,0
 };
  static double A0 = 0;
@@ -248,6 +258,9 @@ static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
  "iN",
  "g",
  "gN",
+ "camax",
+ "capksum",
+ "capkn",
  0,
  "A",
  "B",
@@ -270,7 +283,7 @@ static void nrn_alloc(_prop)
 	_p = nrn_point_prop_->param;
 	_ppvar = nrn_point_prop_->dparam;
  }else{
- 	_p = nrn_prop_data_alloc(_mechtype, 45, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 50, _prop);
  	/*initialize range parameters*/
  	tau1 = 0.5;
  	tau2 = 3;
@@ -291,7 +304,7 @@ static void nrn_alloc(_prop)
  	p0 = 0.5;
   }
  	_prop->param = _p;
- 	_prop->param_size = 45;
+ 	_prop->param_size = 50;
   if (!nrn_point_prop_) {
  	_ppvar = nrn_prop_datum_alloc(_mechtype, 3, _prop);
   }
@@ -337,6 +350,7 @@ static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
 static _modl_cleanup(){ _match_recurse=1;}
+static trackca();
  
 static int _ode_spec1(), _ode_matsol1();
  static int _slist1[7], _dlist1[7];
@@ -411,6 +425,30 @@ static double _hoc_heavi(_vptr) void* _vptr; {
   _thread = _extcall_thread;
   _nt = (_NrnThread*)((Point_process*)_vptr)->_vnt;
  _r =  heavi ( _p, _ppvar, _thread, _nt, *getarg(1) ) ;
+ return(_r);
+}
+ 
+static int  trackca ( _p, _ppvar, _thread, _nt ) double* _p; Datum* _ppvar; Datum* _thread; _NrnThread* _nt; {
+   if ( C1 > camax ) {
+     camax = C1 ;
+     }
+   if ( C1 < caprev  && caprev > caprev2 ) {
+     capksum = capksum + caprev ;
+     capkn = capkn + 1.0 ;
+     }
+   caprev2 = caprev ;
+   caprev = C1 ;
+    return 0; }
+ 
+static double _hoc_trackca(_vptr) void* _vptr; {
+ double _r;
+   double* _p; Datum* _ppvar; Datum* _thread; _NrnThread* _nt;
+   _p = ((Point_process*)_vptr)->_prop->param;
+  _ppvar = ((Point_process*)_vptr)->_prop->dparam;
+  _thread = _extcall_thread;
+  _nt = (_NrnThread*)((Point_process*)_vptr)->_vnt;
+ _r = 1.;
+ trackca ( _p, _ppvar, _thread, _nt ) ;
  return(_r);
 }
  
@@ -489,6 +527,12 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, _NrnThread* _nt
    facN = - exp ( - _ltp / tcon ) + exp ( - _ltp / tcoff ) ;
    wgtN = gNmax / facN ;
    ca = cainf ;
+   C1 = 1000.0 * ca ;
+   camax = C1 ;
+   capksum = 0.0 ;
+   capkn = 0.0 ;
+   caprev = C1 ;
+   caprev2 = C1 ;
    p = p0 ;
    R = heavi ( _threadargscomma_ p - ps ) ;
    }
@@ -522,7 +566,8 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 
 static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, _NrnThread* _nt, double _v){double _current=0.;v=_v;{ {
    double _ls ;
- g = B - A ;
+ trackca ( _threadargs_ ) ;
+   g = B - A ;
    i = g * ( v - e ) ;
    _ls = 1.0 / ( 1.0 + eta * mgconc * exp ( - gamma * v ) ) ;
    gN = bN - aN ;

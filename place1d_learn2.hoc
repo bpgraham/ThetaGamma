@@ -9,6 +9,7 @@
 // Graupner-Brunel plasticity available for excitatory synapses.
 // (Uses combined AMPA/NMDA/plasticity model: ANsynGB).
 // Programmed by BPG 29-4-15
+// 5-5-15: allows constant inhibition or sinusoidal
 
 load_file("nrngui.hoc") // make graphical interface tools available to this program
 load_file("CA1PC5.hoc")
@@ -52,7 +53,7 @@ PLsig=10 	// (cm)	: place field width
 // EC spiking	(place cells too)
 ECPLmaxfr=15 	// (Hz)	: max frequency of spikes per synapse
 ECPLthfreq=5 	// (Hz)	: modulation frequency (theta)
-ECPLthphase=0	// (deg) : theta phase
+ECPLthphase=180	// (deg) : theta phase
 ECPLthamp=0	// <0,1> : amplitude of theta modulation (0<thamp<=1)
 ECPLx0=100 	// (cm)	: place field center
 ECPLsig=10 	// (cm)	: place field width
@@ -81,8 +82,8 @@ Bthdr=0.005	// uS
 Othdr=0.005	// uS
 
 // RECORDING AND STIMULATION
-//nCA3 = 10	// approx. number of inputs generated in W&W experiments
-//nEC = 10
+//nCA3 = 20	// approx. number of inputs generated in W&W experiments
+//nEC = 20
 nCA3 = 100	// approx. number of inputs generated in W&W experiments
 nEC = 100
 objectvar CA3spikes[nCA3], CA3syn[nCA3], CA3nc[nCA3]
@@ -100,6 +101,7 @@ for i = 0,nCA3-1 {
 	CA3spikes[i].maxfr = PLmaxfr
 	CA3spikes[i].thfreq = PLthfreq
 	CA3spikes[i].thphase = PLthphase
+	CA3spikes[i].thamp = PLthamp
 	CA3spikes[i].plx0 = r.normal(PLx0, PLx0/10)
 	CA3spikes[i].plsig = r.normal(PLsig, PLsig/2)
 	cell.Adend[1] CA3syn[i] = new ANsynGB(0.5)
@@ -120,6 +122,7 @@ for i = 0,nEC-1 {
 	ECspikes[i].maxfr = ECPLmaxfr
 	ECspikes[i].thfreq = ECPLthfreq
 	ECspikes[i].thphase = ECPLthphase
+	ECspikes[i].thamp = ECPLthamp
 	ECspikes[i].plx0 = r.normal(PLx0, PLx0/10)
 	ECspikes[i].plsig = r.normal(PLsig, PLsig/2)
 	cell.Adend[2] ECsyn[i] = new ANsynGB(0.5)
@@ -139,11 +142,14 @@ cell.soma istim.loc(0.5)
 istim.del = 0
 istim.dur = Tstop
 istim.erev = -80
+istim.amp = Ithdr
 itheta = new Vector(Tstop)
-itheta.sin(thetafr, 0)
-itheta.add(1)
-itheta.mul(Ithdr)
-itheta.play(&istim.amp, 1)
+if (thetafr > 0) {
+	itheta.sin(thetafr, 0)
+	itheta.add(1)
+	itheta.mul(Ithdr)
+	itheta.play(&istim.amp, 1)
+}
 
 // BSC dendritic inhib
 bstim = new GClamp()
@@ -151,11 +157,14 @@ cell.Adend[1] bstim.loc(0.5)
 bstim.del = 0
 bstim.dur = Tstop
 bstim.erev = -80
+bstim.amp = Bthdr
 btheta = new Vector(Tstop)
-btheta.sin(thetafr, PI)
-btheta.add(1)
-btheta.mul(Bthdr)
-btheta.play(&bstim.amp, 1)
+if (thetafr > 0) {
+	btheta.sin(thetafr, PI)
+	btheta.add(1)
+	btheta.mul(Bthdr)
+	btheta.play(&bstim.amp, 1)
+}
 
 // OLM distal dendritic inhib
 ostim = new GClamp()
@@ -163,11 +172,14 @@ cell.Adend[2] ostim.loc(0.5)
 ostim.del = 0
 ostim.dur = Tstop
 ostim.erev = -80
+ostim.amp = Othdr
 otheta = new Vector(Tstop)
-otheta.sin(thetafr, PI)
-otheta.add(1)
-otheta.mul(Othdr)
-otheta.play(&ostim.amp, 1)
+if (thetafr > 0) {
+	otheta.sin(thetafr, PI)
+	otheta.add(1)
+	otheta.mul(Othdr)
+	otheta.play(&ostim.amp, 1)
+}
 
 
 // PARAMETER CONTROL
@@ -205,15 +217,27 @@ proc setEweights() {
 
 // Inhibitory strengths
 proc setINamps() {
-	itheta.sin(thetafr, 0)
-	itheta.add(1)
-	itheta.mul(Ithdr)
-	btheta.sin(thetafr, PI)
-	btheta.add(1)
-	btheta.mul(Bthdr)
-	otheta.sin(thetafr, PI)
-	otheta.add(1)
-	otheta.mul(Othdr)
+	if (thetafr > 0) {
+		itheta.sin(thetafr, 0)
+		itheta.add(1)
+		itheta.mul(Ithdr)
+		itheta.play(&istim.amp, 1)
+		btheta.sin(thetafr, PI)
+		btheta.add(1)
+		btheta.mul(Bthdr)
+		btheta.play(&bstim.amp, 1)
+		otheta.sin(thetafr, PI)
+		otheta.add(1)
+		otheta.mul(Othdr)
+		otheta.play(&ostim.amp, 1)
+	} else {
+		itheta.play_remove()
+		btheta.play_remove()
+		otheta.play_remove()
+		istim.amp = Ithdr
+		bstim.amp = Bthdr
+		ostim.amp = Othdr
+	}
 }
 
 
@@ -324,7 +348,7 @@ proc dataGUI() {
 
 
 // DATA ANALYSIS
-objref potdata, pall, Rdata, Rall
+objref potdata, pall, Rdata, Rall, capavgd, camaxd
 pall = new Vector()
 Rall = new Vector()
 pmax = 0
@@ -339,6 +363,14 @@ Ravg = 0
 Rstd = 0
 Rallavg = 0
 Rallstd = 0
+camax = 0
+camin = 0
+caavg = 0
+castd = 0
+capkmax = 0
+capkmin = 0
+capkavg = 0
+capkstd = 0
 
 // Calculate average synaptic "p" and "R" values
 proc avgpot() {
@@ -367,8 +399,38 @@ proc avgpot() {
 	Rallstd = Rall.stdev()	
 }
 
+// Calculate average synaptic peak calcium values over a single run
+proc avgsynca() {
+	// for this run
+	capavgd = new Vector(nCA3)
+	camaxd = new Vector(nCA3)
+	for i=0, nCA3-1 {
+		if (CA3syn[i].capkn > 0) {
+			capavgd.x[i] = CA3syn[i].capksum / CA3syn[i].capkn
+		}
+		camaxd.x[i] = CA3syn[i].camax
+	}
+	camax = camaxd.max()
+	camin = camaxd.min()
+	caavg = camaxd.mean()
+	castd = camaxd.stdev()
+	capkmax = capavgd.max()
+	capkmin = capavgd.min()
+	capkavg = capavgd.mean()
+	capkstd = capavgd.stdev()
+}
+
 proc analGUI() {
   	xpanel("Data analysis")
+  	xbutton("Calculate peak Ca", "avgsynca()")
+  	xvalue("Maximum Ca", "camax")
+  	xvalue("Minimum Ca", "camin")
+  	xvalue("Average Ca", "caavg")
+  	xvalue("Std dev Ca", "castd")
+  	xvalue("Max peak Ca", "capkmax")
+  	xvalue("Min peak Ca", "capkmin")
+  	xvalue("Avg peak Ca", "capkavg")
+  	xvalue("Std peak Ca", "capkstd")
   	xbutton("Calculate p and R", "avgpot()")
   	xlabel("Current run")
   	xvalue("Maximum p", "pmax")
@@ -400,5 +462,5 @@ load_file("place1d_graphics.hoc")
 preprasterplot()
 //inputGUI()
 //dataGUI()
-//analGUI()
+analGUI()
 load_file("place1d_learn2.ses")

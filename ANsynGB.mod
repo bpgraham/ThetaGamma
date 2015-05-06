@@ -2,7 +2,7 @@ COMMENT
 Combined AMPA / NMDA synapse.
 With calcium-driven AMPA plasticity using Graupner & Brunel model (2012).
 BPG 6-3-15
-
+BPG 5-5-15: Code to track peak calcium added
 AMPAR
 -----
 Two state kinetic scheme synapse described by rise time tau1,
@@ -51,7 +51,7 @@ NEURON {
 	RANGE tau1, tau2, tauN1, tauN2, e, i, iN, ca, wmin
 	RANGE gNmax, tcon, tcoff, enmda, mgconc, eta, gamma, wN, fCa
 	RANGE g, gN, vol, cainf, taurca, bcap
-	RANGE p, p0, R
+	RANGE p, p0, R, camax, capksum, capkn
 	GLOBAL tau, ps, gp, gd, thp, thd, tp, td
 	NONSPECIFIC_CURRENT i
 	NONSPECIFIC_CURRENT iN
@@ -110,6 +110,11 @@ ASSIGNED {
 	wgtN (uS)
 	cadrive	(mM/ms)
 	C1 (uM)	: calcium in uM
+	camax (uM)	: maximum ca over a run
+	capksum (uM)	: sum of individual peaks in ca
+	capkn (1)	: number of individual peaks
+	caprev (uM)	: previous ca value
+	caprev2(uM)	: next previous ca value
 }
 
 STATE {
@@ -142,6 +147,12 @@ INITIAL {
    	wgtN = gNmax / facN
    	
    	ca = cainf
+	C1 = 1000*ca
+	camax=C1
+	capksum=0
+	capkn=0
+	caprev=C1
+	caprev2=C1
 
 	p=p0
 	R=heavi(p-ps)
@@ -151,6 +162,8 @@ BREAKPOINT {
 	LOCAL s
 	
 	SOLVE state METHOD cnexp
+	trackca()
+	
 	g = B - A
 	i = g*(v - e)
 
@@ -181,6 +194,17 @@ FUNCTION heavi(x (uM)) (1) {
 	if (x>0) {
 	  heavi = 1
 	}
+}
+
+PROCEDURE trackca() {
+	if (C1>camax) {camax=C1}
+	
+	if (C1<caprev && caprev>caprev2) {
+		capksum = capksum + caprev
+		capkn = capkn + 1
+	}
+	caprev2 = caprev
+	caprev = C1
 }
 
 NET_RECEIVE(weight (uS)) {

@@ -33,6 +33,7 @@ fprintf(stderr," na3n.mod");
 fprintf(stderr," naxn.mod");
 fprintf(stderr," nmda.mod");
 fprintf(stderr," nmdaca.mod");
+fprintf(stderr," peakca.mod");
 fprintf(stderr, "\n");
     }
 _ANsynGB_reg();
@@ -60,4 +61,5 @@ _na3n_reg();
 _naxn_reg();
 _nmda_reg();
 _nmdaca_reg();
+_peakca_reg();
 }
