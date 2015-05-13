@@ -3,6 +3,33 @@
 #define IMPORT extern __declspec(dllimport)
 IMPORT int nrnmpi_myid, nrn_nobanner_;
 
+extern void _ANsynGB_reg();
+extern void _ECellOlufsen_reg();
+extern void _ECellTort_reg();
+extern void _IcellWangBuzsaki_reg();
+extern void _OCellTort_reg();
+extern void _PT1dstim_reg();
+extern void _bistableGB_reg();
+extern void _burststim2_reg();
+extern void _burststim3_reg();
+extern void _cad_reg();
+extern void _cagk_reg();
+extern void _carF_reg();
+extern void _celldrive_reg();
+extern void _exp2synGB_reg();
+extern void _gclamp_reg();
+extern void _h_reg();
+extern void _kadist_reg();
+extern void _kaprox_reg();
+extern void _kca_reg();
+extern void _kdrca1_reg();
+extern void _km_reg();
+extern void _na3n_reg();
+extern void _naxn_reg();
+extern void _nmda_reg();
+extern void _nmdaca_reg();
+extern void _peakca_reg();
+
 modl_reg(){
 	//nrn_mswindll_stdio(stdin, stdout, stderr);
     if (!nrn_nobanner_) if (nrnmpi_myid < 1) {

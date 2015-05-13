@@ -3,23 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "scoplib.h"
+#include "scoplib_ansi.h"
 #undef PI
- 
+#define nil 0
 #include "md1redef.h"
 #include "section.h"
+#include "nrniv_mf.h"
 #include "md2redef.h"
-
+ 
 #if METHOD3
 extern int _method3;
 #endif
 
+#if !NRNGPU
 #undef exp
 #define exp hoc_Exp
-extern double hoc_Exp();
+extern double hoc_Exp(double);
+#endif
  
 #define _threadargscomma_ /**/
 #define _threadargs_ /**/
+ 
+#define _threadargsprotocomma_ /**/
+#define _threadargsproto_ /**/
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
@@ -61,11 +67,20 @@ extern double hoc_Exp();
 #define h _mlhh
 #endif
 #endif
+ 
+#if defined(__cplusplus)
+extern "C" {
+#endif
  static int hoc_nrnpointerindex =  -1;
  /* external NEURON variables */
  /* declaration of user functions */
  static int _mechtype;
-extern int nrn_get_mechtype();
+extern void _nrn_cacheloop_reg(int, int);
+extern void hoc_register_prop_size(int, int, int);
+extern void hoc_register_limits(int, HocParmLimits*);
+extern void hoc_register_units(int, HocParmUnits*);
+extern void nrn_promote(Prop*, int, int);
+extern Memb_func* memb_func;
  extern Prop* nrn_point_prop_;
  static int _pointtype;
  static void* _hoc_create_pnt(_ho) Object* _ho; { void* create_point_process();
@@ -85,16 +100,15 @@ extern int nrn_get_mechtype();
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
  }
- static _hoc_setdata(_vptr) void* _vptr; { Prop* _prop;
+ static void _hoc_setdata(void* _vptr) { Prop* _prop;
  _prop = ((Point_process*)_vptr)->_prop;
    _setdata(_prop);
  }
  /* connect user functions to hoc names */
- static IntFunc hoc_intfunc[] = {
+ static VoidFunc hoc_intfunc[] = {
  0,0
 };
- static struct Member_func {
-	char* _name; double (*_member)();} _member_func[] = {
+ static Member_func _member_func[] = {
  "loc", _hoc_loc_pnt,
  "has_loc", _hoc_has_loc,
  "get_loc", _hoc_get_loc_pnt,
@@ -130,17 +144,23 @@ extern int nrn_get_mechtype();
  0,0,0
 };
  static double _sav_indep;
- static void nrn_alloc(), nrn_init(), nrn_state();
- static void nrn_cur(), nrn_jacob();
+ static void nrn_alloc(Prop*);
+static void  nrn_init(_NrnThread*, _Memb_list*, int);
+static void nrn_state(_NrnThread*, _Memb_list*, int);
+ static void nrn_cur(_NrnThread*, _Memb_list*, int);
+static void  nrn_jacob(_NrnThread*, _Memb_list*, int);
  static void _hoc_destroy_pnt(_vptr) void* _vptr; {
    destroy_point_process(_vptr);
 }
  
-static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
+static int _ode_count(int);
+static void _ode_map(int, double**, double**, double*, Datum*, double*, int);
+static void _ode_spec(_NrnThread*, _Memb_list*, int);
+static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  
 #define _cvode_ieq _ppvar[5]._i
  /* connect range variables in _p that hoc is supposed to know about */
- static char *_mechanism[] = {
+ static const char *_mechanism[] = {
  "6.2.0",
 "NMDAca",
  "fCa",
@@ -162,10 +182,10 @@ static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
  0};
  static Symbol* _ca_sym;
  
-static void nrn_alloc(_prop)
-	Prop *_prop;
-{
-	Prop *prop_ion, *need_memb();
+extern Prop* need_memb(Symbol*);
+
+static void nrn_alloc(Prop* _prop) {
+	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
   if (nrn_point_prop_) {
 	_prop->_alloc_seq = nrn_point_prop_->_alloc_seq;
@@ -197,27 +217,29 @@ static void nrn_alloc(_prop)
  	_ppvar[4]._pval = &prop_ion->param[4]; /* _ion_dicadv */
  
 }
- static _initlists();
+ static void _initlists();
   /* some states have an absolute tolerance */
  static Symbol** _atollist;
  static HocStateTolerance _hoc_state_tol[] = {
  0,0
 };
- static _net_receive();
- typedef (*_Pfrv)();
- extern _Pfrv* pnt_receive;
- extern short* pnt_receive_size;
+ static void _net_receive(Point_process*, double*, double);
  static void _update_ion_pointer(Datum*);
- _nmdaca_reg() {
+ extern Symbol* hoc_lookup(const char*);
+extern void _nrn_thread_reg(int, int, void(*f)(Datum*));
+extern void _nrn_thread_table_reg(int, void(*)(double*, Datum*, Datum*, _NrnThread*, int));
+extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
+extern void _cvode_abstol( Symbol**, double*, int);
+
+ void _nmdaca_reg() {
 	int _vectorized = 0;
   _initlists();
  	ion_reg("ca", -10000.);
  	_ca_sym = hoc_lookup("ca_ion");
  	_pointtype = point_register_mech(_mechanism,
 	 nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init,
-	 hoc_nrnpointerindex,
-	 _hoc_create_pnt, _hoc_destroy_pnt, _member_func,
-	 0);
+	 hoc_nrnpointerindex, 0,
+	 _hoc_create_pnt, _hoc_destroy_pnt, _member_func);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
      _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
@@ -227,7 +249,7 @@ static void nrn_alloc(_prop)
  pnt_receive[_mechtype] = _net_receive;
  pnt_receive_size[_mechtype] = 1;
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 NMDAca /cygdrive/c/Documents and Settings/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/nmdaca.mod\n");
+ 	ivoc_help("help ?1 NMDAca C:/Users/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/nmdaca.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -237,15 +259,16 @@ static char *modelname = "nmda synapse ";
 static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
-static _modl_cleanup(){ _match_recurse=1;}
+static void _modl_cleanup(){ _match_recurse=1;}
  static int _deriv1_advance = 0;
  
-static int _ode_spec1(), _ode_matsol1();
+static int _ode_spec1(_threadargsproto_);
+/*static int _ode_matsol1(_threadargsproto_);*/
  extern int state_discon_flag_;
  static int _slist2[2]; static double _dlist2[2];
  static double _savstate1[2], *_temp1 = _savstate1;
  static int _slist1[2], _dlist1[2];
- static int states();
+ static int states(_threadargsproto_);
  
 /*CVODE*/
  static int _ode_spec1 () {_reset=0;
@@ -258,6 +281,7 @@ static int _ode_spec1(), _ode_matsol1();
  static int _ode_matsol1 () {
  Da = Da  / (1. - dt*( ( - 1.0 ) / tcon )) ;
  Db = Db  / (1. - dt*( ( - 1.0 ) / tcoff )) ;
+ return 0;
 }
  /*END CVODE*/
  
@@ -280,7 +304,7 @@ _dlist2[++_counte] = _p[_slist1[_id]] - _savstate1[_id];}}}
  } }
  return _reset;}
  
-static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; double _lflag; 
+static void _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; double _lflag; 
 {    _p = _pnt->_prop->param; _ppvar = _pnt->_prop->dparam;
   if (_tsav > t){ extern char* hoc_object_name(); hoc_execerror(hoc_object_name(_pnt->ob), ":Event arrived out of order. Must call ParallelContext.set_maxstep AFTER assigning minimum NetCon.delay");}
  _tsav = t; {
@@ -290,9 +314,9 @@ static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; do
    state_discontinuity ( _cvode_ieq + 1, & b , b + _lx ) ;
    } }
  
-static int _ode_count(_type) int _type;{ return 2;}
+static int _ode_count(int _type){ return 2;}
  
-static int _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
+static void _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
    Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
@@ -305,7 +329,7 @@ static int _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
      _ode_spec1 ();
   }}
  
-static int _ode_map(_ieq, _pv, _pvdot, _pp, _ppd, _atol, _type) int _ieq, _type; double** _pv, **_pvdot, *_pp, *_atol; Datum* _ppd; { 
+static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum* _ppd, double* _atol, int _type) { 
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
 	for (_i=0; _i < 2; ++_i) {
@@ -314,7 +338,7 @@ static int _ode_map(_ieq, _pv, _pvdot, _pp, _ppd, _atol, _type) int _ieq, _type;
 	}
  }
  
-static int _ode_matsol(_NrnThread* _nt, _Memb_list* _ml, int _type) {
+static void _ode_matsol(_NrnThread* _nt, _Memb_list* _ml, int _type) {
    Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
@@ -473,7 +497,7 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   eca = _ion_eca;
  { {
  for (; t < _break; t += dt) {
- error = 0; _deriv1_advance = 1;
+ error = _deriv1_advance = 1;
  derivimplicit(_ninits, 2, _slist1, _dlist1, _p, &t, dt, states, &_temp1);
 _deriv1_advance = 0;
  if(error){fprintf(stderr,"at line 59 in file nmdaca.mod:\n	SOLVE states METHOD derivimplicit\n"); nrn_complain(_p); abort_run(error);}
@@ -484,9 +508,9 @@ _deriv1_advance = 0;
 
 }
 
-static terminal(){}
+static void terminal(){}
 
-static _initlists() {
+static void _initlists() {
  int _i; static int _first = 1;
   if (!_first) return;
  _slist1[0] = &(a) - _p;  _dlist1[0] = &(Da) - _p;

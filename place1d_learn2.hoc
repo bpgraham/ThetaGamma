@@ -82,9 +82,9 @@ Bthdr=0.005	// uS
 Othdr=0.005	// uS
 
 // RECORDING AND STIMULATION
-//nCA3 = 20	// approx. number of inputs generated in W&W experiments
+nCA3 = 50	// approx. number of inputs generated in W&W experiments
 //nEC = 20
-nCA3 = 100	// approx. number of inputs generated in W&W experiments
+//nCA3 = 100	// approx. number of inputs generated in W&W experiments
 nEC = 100
 objectvar CA3spikes[nCA3], CA3syn[nCA3], CA3nc[nCA3]
 objectvar ECspikes[nEC], ECnc[nEC], ECsyn[nEC]
@@ -462,5 +462,5 @@ load_file("place1d_graphics.hoc")
 preprasterplot()
 //inputGUI()
 //dataGUI()
-analGUI()
+//analGUI()
 load_file("place1d_learn2.ses")

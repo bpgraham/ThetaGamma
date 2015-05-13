@@ -1,0 +1,152 @@
+// Single PC for testing.
+// New 5-cpt PC model based on Tort, but using ion channels and distributions
+// from my Migliore-adapted PC model from Neural Computation (2014) paper.
+// Mainly set up to examine current injection response with different channel densities.
+// Programmed by BPG 13-5-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("CA1PC5ext.hoc")	// extended version with more ion channels eg M-current
+cvode_active(1)		// needed to correct synaptic plasticity calculations at least
+
+Tstop=1000	// ms
+
+// CREATING CELL
+objectvar Ecell
+Ecell = new PCell5()
+access Ecell.soma
+
+
+// POSTSYNAPTIC CURRENT INJECTION
+objectvar Iinj, Isin, Ifreq
+
+// Step current
+Iinj = new IClamp(0.5)	// middle of soma
+Iinj.del = 10	// msec relative to input
+Iinj.amp = 0.1	// nA
+Iinj.dur = 15	//  msec
+
+// Sinusoidal
+Isinfr = 5	// Hz
+Isindr = 0.1	// max nA
+Isin = new IClamp(0.5)	// middle of soma
+Isin.del = 0
+Isin.dur = Tstop
+Ifreq = new Vector(Tstop)
+Ifreq.sin(Isinfr, 0)
+Ifreq.add(1)
+Ifreq.mul(Isindr)
+Ifreq.play(&Isin.amp, 1)
+
+
+// PARAMETER CONTROL
+
+// Current strengths
+proc setIamps() {
+	Ifreq.sin(Isinfr, 0)
+	Ifreq.add(1)
+	Ifreq.mul(Isindr)
+}
+
+
+// GUI
+proc inputGUI() {
+	xpanel("Inputs")
+	xlabel("Sinusoidal")
+	xpvalue("Current amplitude (nA)", &Isindr, 1, "setIamps()")
+	xpvalue("Sinusoidal frequency (Hz)", &Isinfr, 1, "setIamps()")
+	xpanel()
+}
+
+//###########################################################################
+// Data recordings and storage
+
+// Record cell voltage, current and calcium traces
+objref tvec, Ev, EA1v, EA2v // Vectors that record cell voltage traces
+objref Evt, EA1vt, EA2vt // Vectors that record times
+objref EA1ca, EA1cat	// Dendritic calcium
+
+// Data storage
+objref fo
+strdef fno, ff, fstem, prefolder, prestem
+
+DT = 1	// record time every 1 ms
+
+prefolder = "../../../Results/ThetaGamma"
+prestem = "run"
+expdate = 130515	// today's date
+exprun = 1		// run number
+
+// Store generic data
+proc storedata() { local i
+	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
+	fo = new File(fno)
+	fo.wopen()
+	for i=0, $o4.size-1 {
+        	fo.printf("%g %g\n", $o5.x[i], $o4.x[i])
+	}
+	fo.close()
+}
+
+// Record soma voltage traces from example cells
+proc recordV() { 
+	Ev = new Vector()
+	Evt = new Vector()
+	EA1v = new Vector()
+	EA1vt = new Vector()
+	EA2v = new Vector()
+	EA2vt = new Vector()
+	
+	Ecell.soma cvode.record(&v(0.5), Ev, Evt)
+	Ecell.Adend[1] cvode.record(&v(0.5), EA1v, EA1vt)
+	Ecell.Adend[2] cvode.record(&v(0.5), EA2v, EA2vt)
+}
+
+// Store voltage traces
+proc storeVall() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EvSoma", Ev, Evt)
+	storedata(ff, fstem, "EvAd1", EA1v, EA1vt)
+	storedata(ff, fstem, "EvAd2", EA2v, EA2vt)
+}
+
+// Record dendritic calcium traces from example cells
+proc recordCa() { 
+	EA1ca = new Vector()
+	EA1cat = new Vector()
+	
+	Ecell.Adend[1] cvode.record(&cai(0.5), EA1ca, EA1cat)
+}
+
+// Store calcium traces
+proc storeCa() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EcaAd1", EA1ca, EA1cat)
+}
+
+
+proc dataGUI() {
+  	xpanel("Data output")
+  	xlabel("Data output")
+  	xvalue("Date (ddmmyy)", "expdate")
+  	xvalue("Experiment run", "exprun")
+  	xbutton("Store voltage traces", "storeVall()")
+  	xbutton("Store calcium traces", "storeCa()")
+  	xpanel()
+}
+
+
+// Set up recordings
+access Ecell.soma // by some reason it is only possible to record "t" when a section is accessed
+tvec = new Vector()
+tvec.record(&t,DT)
+recordV()
+recordCa()
+
+// Load GUI
+inputGUI()
+//dataGUI()
+load_file("testPC5.ses")

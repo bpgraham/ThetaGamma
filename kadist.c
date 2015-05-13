@@ -3,23 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "scoplib.h"
+#include "scoplib_ansi.h"
 #undef PI
- 
+#define nil 0
 #include "md1redef.h"
 #include "section.h"
+#include "nrniv_mf.h"
 #include "md2redef.h"
-
+ 
 #if METHOD3
 extern int _method3;
 #endif
 
+#if !NRNGPU
 #undef exp
 #define exp hoc_Exp
-extern double hoc_Exp();
+extern double hoc_Exp(double);
+#endif
  
 #define _threadargscomma_ /**/
 #define _threadargs_ /**/
+ 
+#define _threadargsprotocomma_ /**/
+#define _threadargsproto_ /**/
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
@@ -50,29 +56,38 @@ extern double hoc_Exp();
 #define h _mlhh
 #endif
 #endif
+ 
+#if defined(__cplusplus)
+extern "C" {
+#endif
  static int hoc_nrnpointerindex =  -1;
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static int _hoc_alpl();
- static int _hoc_alpn();
- static int _hoc_betl();
- static int _hoc_betn();
- static int _hoc_rates();
+ static void _hoc_alpl(void);
+ static void _hoc_alpn(void);
+ static void _hoc_betl(void);
+ static void _hoc_betn(void);
+ static void _hoc_rates(void);
  static int _mechtype;
-extern int nrn_get_mechtype();
+extern void _nrn_cacheloop_reg(int, int);
+extern void hoc_register_prop_size(int, int, int);
+extern void hoc_register_limits(int, HocParmLimits*);
+extern void hoc_register_units(int, HocParmUnits*);
+extern void nrn_promote(Prop*, int, int);
+extern Memb_func* memb_func;
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
  }
- static _hoc_setdata() {
- Prop *_prop, *hoc_getdata_range();
+ static void _hoc_setdata() {
+ Prop *_prop, *hoc_getdata_range(int);
  _prop = hoc_getdata_range(_mechtype);
    _setdata(_prop);
- ret(1.);
+ hoc_retpushx(1.);
 }
  /* connect user functions to hoc names */
- static IntFunc hoc_intfunc[] = {
+ static VoidFunc hoc_intfunc[] = {
  "setdata_kad", _hoc_setdata,
  "alpl_kad", _hoc_alpl,
  "alpn_kad", _hoc_alpn,
@@ -85,10 +100,10 @@ extern int nrn_get_mechtype();
 #define alpn alpn_kad
 #define betl betl_kad
 #define betn betn_kad
- extern double alpl();
- extern double alpn();
- extern double betl();
- extern double betn();
+ extern double alpl( double );
+ extern double alpn( double );
+ extern double betl( double );
+ extern double betn( double );
  /* declare global and static user variables */
 #define a0n a0n_kad
  double a0n = 0.1;
@@ -178,14 +193,20 @@ extern int nrn_get_mechtype();
  0,0,0
 };
  static double _sav_indep;
- static void nrn_alloc(), nrn_init(), nrn_state();
- static void nrn_cur(), nrn_jacob();
+ static void nrn_alloc(Prop*);
+static void  nrn_init(_NrnThread*, _Memb_list*, int);
+static void nrn_state(_NrnThread*, _Memb_list*, int);
+ static void nrn_cur(_NrnThread*, _Memb_list*, int);
+static void  nrn_jacob(_NrnThread*, _Memb_list*, int);
  
-static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
+static int _ode_count(int);
+static void _ode_map(int, double**, double**, double*, Datum*, double*, int);
+static void _ode_spec(_NrnThread*, _Memb_list*, int);
+static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  
 #define _cvode_ieq _ppvar[3]._i
  /* connect range variables in _p that hoc is supposed to know about */
- static char *_mechanism[] = {
+ static const char *_mechanism[] = {
  "6.2.0",
 "kad",
  "gkabar_kad",
@@ -198,10 +219,10 @@ static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
  0};
  static Symbol* _k_sym;
  
-static void nrn_alloc(_prop)
-	Prop *_prop;
-{
-	Prop *prop_ion, *need_memb();
+extern Prop* need_memb(Symbol*);
+
+static void nrn_alloc(Prop* _prop) {
+	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
  	_p = nrn_prop_data_alloc(_mechtype, 9, _prop);
  	/*initialize range parameters*/
@@ -218,14 +239,20 @@ static void nrn_alloc(_prop)
  	_ppvar[2]._pval = &prop_ion->param[4]; /* _ion_dikdv */
  
 }
- static _initlists();
+ static void _initlists();
   /* some states have an absolute tolerance */
  static Symbol** _atollist;
  static HocStateTolerance _hoc_state_tol[] = {
  0,0
 };
  static void _update_ion_pointer(Datum*);
- _kadist_reg() {
+ extern Symbol* hoc_lookup(const char*);
+extern void _nrn_thread_reg(int, int, void(*f)(Datum*));
+extern void _nrn_thread_table_reg(int, void(*)(double*, Datum*, Datum*, _NrnThread*, int));
+extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
+extern void _cvode_abstol( Symbol**, double*, int);
+
+ void _kadist_reg() {
 	int _vectorized = 0;
   _initlists();
  	ion_reg("k", -10000.);
@@ -238,7 +265,7 @@ static void nrn_alloc(_prop)
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
  	hoc_register_tolerance(_mechtype, _hoc_state_tol, &_atollist);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 kad /cygdrive/c/Documents and Settings/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/kadist.mod\n");
+ 	ivoc_help("help ?1 kad C:/Users/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/kadist.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -248,16 +275,15 @@ static char *modelname = "K-A channel from Klee Ficker and Heinemann";
 static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
-static _modl_cleanup(){ _match_recurse=1;}
-static rates();
+static void _modl_cleanup(){ _match_recurse=1;}
+static int rates(double);
  
-static int _ode_spec1(), _ode_matsol1();
+static int _ode_spec1(_threadargsproto_);
+/*static int _ode_matsol1(_threadargsproto_);*/
  static int _slist1[2], _dlist1[2];
- static int states();
+ static int states(_threadargsproto_);
  
-double alpn (  _lv )  
-	double _lv ;
- {
+double alpn (  double _lv ) {
    double _lalpn;
  double _lzeta ;
  _lzeta = zetan + pw / ( 1.0 + exp ( ( _lv - tq ) / qq ) ) ;
@@ -266,15 +292,13 @@ double alpn (  _lv )
 return _lalpn;
  }
  
-static int _hoc_alpn() {
+static void _hoc_alpn(void) {
   double _r;
-   _r =  alpn (  *getarg(1) ) ;
- ret(_r);
+   _r =  alpn (  *getarg(1) );
+ hoc_retpushx(_r);
 }
  
-double betn (  _lv )  
-	double _lv ;
- {
+double betn (  double _lv ) {
    double _lbetn;
  double _lzeta ;
  _lzeta = zetan + pw / ( 1.0 + exp ( ( _lv - tq ) / qq ) ) ;
@@ -283,40 +307,36 @@ double betn (  _lv )
 return _lbetn;
  }
  
-static int _hoc_betn() {
+static void _hoc_betn(void) {
   double _r;
-   _r =  betn (  *getarg(1) ) ;
- ret(_r);
+   _r =  betn (  *getarg(1) );
+ hoc_retpushx(_r);
 }
  
-double alpl (  _lv )  
-	double _lv ;
- {
+double alpl (  double _lv ) {
    double _lalpl;
  _lalpl = exp ( 1.e-3 * zetal * ( _lv - vhalfl ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
    
 return _lalpl;
  }
  
-static int _hoc_alpl() {
+static void _hoc_alpl(void) {
   double _r;
-   _r =  alpl (  *getarg(1) ) ;
- ret(_r);
+   _r =  alpl (  *getarg(1) );
+ hoc_retpushx(_r);
 }
  
-double betl (  _lv )  
-	double _lv ;
- {
+double betl (  double _lv ) {
    double _lbetl;
  _lbetl = exp ( 1.e-3 * zetal * gml * ( _lv - vhalfl ) * 9.648e4 / ( 8.315 * ( 273.16 + celsius ) ) ) ;
    
 return _lbetl;
  }
  
-static int _hoc_betl() {
+static void _hoc_betl(void) {
   double _r;
-   _r =  betl (  *getarg(1) ) ;
- ret(_r);
+   _r =  betl (  *getarg(1) );
+ hoc_retpushx(_r);
 }
  
 /*CVODE*/
@@ -332,6 +352,7 @@ static int _hoc_betl() {
  rates ( _threadargscomma_ v ) ;
  Dn = Dn  / (1. - dt*( ( ( ( - 1.0 ) ) ) / taun )) ;
  Dl = Dl  / (1. - dt*( ( ( ( - 1.0 ) ) ) / taul )) ;
+ return 0;
 }
  /*END CVODE*/
  static int states () {_reset=0;
@@ -343,9 +364,7 @@ static int _hoc_betl() {
   return 0;
 }
  
-static int  rates (  _lv )  
-	double _lv ;
- {
+static int  rates (  double _lv ) {
    double _la , _lqt ;
  _lqt = pow( q10 , ( ( celsius - 24.0 ) / 10.0 ) ) ;
    _la = alpn ( _threadargscomma_ _lv ) ;
@@ -362,16 +381,16 @@ static int  rates (  _lv )
      }
     return 0; }
  
-static int _hoc_rates() {
+static void _hoc_rates(void) {
   double _r;
    _r = 1.;
- rates (  *getarg(1) ) ;
- ret(_r);
+ rates (  *getarg(1) );
+ hoc_retpushx(_r);
 }
  
-static int _ode_count(_type) int _type;{ return 2;}
+static int _ode_count(int _type){ return 2;}
  
-static int _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
+static void _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
    Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
@@ -384,7 +403,7 @@ static int _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
      _ode_spec1 ();
   }}
  
-static int _ode_map(_ieq, _pv, _pvdot, _pp, _ppd, _atol, _type) int _ieq, _type; double** _pv, **_pvdot, *_pp, *_atol; Datum* _ppd; { 
+static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum* _ppd, double* _atol, int _type) { 
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
 	for (_i=0; _i < 2; ++_i) {
@@ -393,7 +412,7 @@ static int _ode_map(_ieq, _pv, _pvdot, _pp, _ppd, _atol, _type) int _ieq, _type;
 	}
  }
  
-static int _ode_matsol(_NrnThread* _nt, _Memb_list* _ml, int _type) {
+static void _ode_matsol(_NrnThread* _nt, _Memb_list* _ml, int _type) {
    Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
@@ -551,9 +570,9 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 
 }
 
-static terminal(){}
+static void terminal(){}
 
-static _initlists() {
+static void _initlists() {
  int _i; static int _first = 1;
   if (!_first) return;
  _slist1[0] = &(n) - _p;  _dlist1[0] = &(Dn) - _p;

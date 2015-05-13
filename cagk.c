@@ -3,23 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "scoplib.h"
+#include "scoplib_ansi.h"
 #undef PI
- 
+#define nil 0
 #include "md1redef.h"
 #include "section.h"
+#include "nrniv_mf.h"
 #include "md2redef.h"
-
+ 
 #if METHOD3
 extern int _method3;
 #endif
 
+#if !NRNGPU
 #undef exp
 #define exp hoc_Exp
-extern double hoc_Exp();
+extern double hoc_Exp(double);
+#endif
  
 #define _threadargscomma_ /**/
 #define _threadargs_ /**/
+ 
+#define _threadargsprotocomma_ /**/
+#define _threadargsproto_ /**/
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
@@ -49,28 +55,37 @@ extern double hoc_Exp();
 #define h _mlhh
 #endif
 #endif
+ 
+#if defined(__cplusplus)
+extern "C" {
+#endif
  static int hoc_nrnpointerindex =  -1;
  /* external NEURON variables */
  extern double celsius;
  /* declaration of user functions */
- static int _hoc_alp();
- static int _hoc_bet();
- static int _hoc_exp1();
- static int _hoc_rate();
+ static void _hoc_alp(void);
+ static void _hoc_bet(void);
+ static void _hoc_exp1(void);
+ static void _hoc_rate(void);
  static int _mechtype;
-extern int nrn_get_mechtype();
+extern void _nrn_cacheloop_reg(int, int);
+extern void hoc_register_prop_size(int, int, int);
+extern void hoc_register_limits(int, HocParmLimits*);
+extern void hoc_register_units(int, HocParmUnits*);
+extern void nrn_promote(Prop*, int, int);
+extern Memb_func* memb_func;
  extern void _nrn_setdata_reg(int, void(*)(Prop*));
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
  }
- static _hoc_setdata() {
- Prop *_prop, *hoc_getdata_range();
+ static void _hoc_setdata() {
+ Prop *_prop, *hoc_getdata_range(int);
  _prop = hoc_getdata_range(_mechtype);
    _setdata(_prop);
- ret(1.);
+ hoc_retpushx(1.);
 }
  /* connect user functions to hoc names */
- static IntFunc hoc_intfunc[] = {
+ static VoidFunc hoc_intfunc[] = {
  "setdata_kmAHP", _hoc_setdata,
  "alp_kmAHP", _hoc_alp,
  "bet_kmAHP", _hoc_bet,
@@ -81,9 +96,9 @@ extern int nrn_get_mechtype();
 #define alp alp_kmAHP
 #define bet bet_kmAHP
 #define exp1 exp1_kmAHP
- extern double alp();
- extern double bet();
- extern double exp1();
+ extern double alp( double , double );
+ extern double bet( double , double );
+ extern double exp1( double , double , double );
  /* declare global and static user variables */
 #define abar abar_kmAHP
  double abar = 0.48;
@@ -134,14 +149,20 @@ extern int nrn_get_mechtype();
  0,0,0
 };
  static double _sav_indep;
- static void nrn_alloc(), nrn_init(), nrn_state();
- static void nrn_cur(), nrn_jacob();
+ static void nrn_alloc(Prop*);
+static void  nrn_init(_NrnThread*, _Memb_list*, int);
+static void nrn_state(_NrnThread*, _Memb_list*, int);
+ static void nrn_cur(_NrnThread*, _Memb_list*, int);
+static void  nrn_jacob(_NrnThread*, _Memb_list*, int);
  
-static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
+static int _ode_count(int);
+static void _ode_map(int, double**, double**, double*, Datum*, double*, int);
+static void _ode_spec(_NrnThread*, _Memb_list*, int);
+static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  
 #define _cvode_ieq _ppvar[4]._i
  /* connect range variables in _p that hoc is supposed to know about */
- static char *_mechanism[] = {
+ static const char *_mechanism[] = {
  "6.2.0",
 "kmAHP",
  "gkbar_kmAHP",
@@ -154,10 +175,10 @@ static int _ode_count(), _ode_map(), _ode_spec(), _ode_matsol();
  static Symbol* _ca_sym;
  static Symbol* _k_sym;
  
-static void nrn_alloc(_prop)
-	Prop *_prop;
-{
-	Prop *prop_ion, *need_memb();
+extern Prop* need_memb(Symbol*);
+
+static void nrn_alloc(Prop* _prop) {
+	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
  	_p = nrn_prop_data_alloc(_mechtype, 7, _prop);
  	/*initialize range parameters*/
@@ -177,14 +198,20 @@ static void nrn_alloc(_prop)
  	_ppvar[3]._pval = &prop_ion->param[4]; /* _ion_dikdv */
  
 }
- static _initlists();
+ static void _initlists();
   /* some states have an absolute tolerance */
  static Symbol** _atollist;
  static HocStateTolerance _hoc_state_tol[] = {
  0,0
 };
  static void _update_ion_pointer(Datum*);
- _cagk_reg() {
+ extern Symbol* hoc_lookup(const char*);
+extern void _nrn_thread_reg(int, int, void(*f)(Datum*));
+extern void _nrn_thread_table_reg(int, void(*)(double*, Datum*, Datum*, _NrnThread*, int));
+extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
+extern void _cvode_abstol( Symbol**, double*, int);
+
+ void _cagk_reg() {
 	int _vectorized = 0;
   _initlists();
  	ion_reg("ca", -10000.);
@@ -199,7 +226,7 @@ static void nrn_alloc(_prop)
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
  	hoc_register_tolerance(_mechtype, _hoc_state_tol, &_atollist);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 kmAHP /cygdrive/c/Documents and Settings/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/cagk.mod\n");
+ 	ivoc_help("help ?1 kmAHP C:/Users/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/cagk.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -211,15 +238,16 @@ static char *modelname = "CaGk";
 static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
-static _modl_cleanup(){ _match_recurse=1;}
-static rate();
+static void _modl_cleanup(){ _match_recurse=1;}
+static int rate(double, double);
  static int _deriv1_advance = 0;
  
-static int _ode_spec1(), _ode_matsol1();
+static int _ode_spec1(_threadargsproto_);
+/*static int _ode_matsol1(_threadargsproto_);*/
  static int _slist2[1]; static double _dlist2[1];
  static double _savstate1[1], *_temp1 = _savstate1;
  static int _slist1[1], _dlist1[1];
- static int state();
+ static int state(_threadargsproto_);
  
 /*CVODE*/
  static int _ode_spec1 () {_reset=0;
@@ -232,6 +260,7 @@ static int _ode_spec1(), _ode_matsol1();
  static int _ode_matsol1 () {
  rate ( _threadargscomma_ v , cai ) ;
  Do = Do  / (1. - dt*( ( ( ( - 1.0 ) ) ) / tau )) ;
+ return 0;
 }
  /*END CVODE*/
  
@@ -254,70 +283,62 @@ _dlist2[++_counte] = _p[_slist1[_id]] - _savstate1[_id];}}}
  } }
  return _reset;}
  
-double alp (  _lv , _lca )  
-	double _lv , _lca ;
- {
+double alp (  double _lv , double _lca ) {
    double _lalp;
  _lalp = abar / ( 1.0 + exp1 ( _threadargscomma_ k1 , d1 , _lv ) / _lca ) ;
    
 return _lalp;
  }
  
-static int _hoc_alp() {
+static void _hoc_alp(void) {
   double _r;
-   _r =  alp (  *getarg(1) , *getarg(2) ) ;
- ret(_r);
+   _r =  alp (  *getarg(1) , *getarg(2) );
+ hoc_retpushx(_r);
 }
  
-double bet (  _lv , _lca )  
-	double _lv , _lca ;
- {
+double bet (  double _lv , double _lca ) {
    double _lbet;
  _lbet = bbar / ( 1.0 + _lca / exp1 ( _threadargscomma_ k2 , d2 , _lv ) ) ;
    
 return _lbet;
  }
  
-static int _hoc_bet() {
+static void _hoc_bet(void) {
   double _r;
-   _r =  bet (  *getarg(1) , *getarg(2) ) ;
- ret(_r);
+   _r =  bet (  *getarg(1) , *getarg(2) );
+ hoc_retpushx(_r);
 }
  
-double exp1 (  _lk , _ld , _lv )  
-	double _lk , _ld , _lv ;
- {
+double exp1 (  double _lk , double _ld , double _lv ) {
    double _lexp1;
  _lexp1 = _lk * exp ( - 2.0 * _ld * FARADAY * _lv / R / ( 273.15 + celsius ) ) ;
    
 return _lexp1;
  }
  
-static int _hoc_exp1() {
+static void _hoc_exp1(void) {
   double _r;
-   _r =  exp1 (  *getarg(1) , *getarg(2) , *getarg(3) ) ;
- ret(_r);
+   _r =  exp1 (  *getarg(1) , *getarg(2) , *getarg(3) );
+ hoc_retpushx(_r);
 }
  
-static int  rate (  _lv , _lca )  
-	double _lv , _lca ;
- {
+static int  rate (  double _lv , double _lca ) {
    double _la ;
  _la = alp ( _threadargscomma_ _lv , _lca ) ;
    tau = 1.0 / ( _la + bet ( _threadargscomma_ _lv , _lca ) ) ;
    oinf = _la * tau ;
     return 0; }
  
-static int _hoc_rate() {
+static void _hoc_rate(void) {
   double _r;
    _r = 1.;
- rate (  *getarg(1) , *getarg(2) ) ;
- ret(_r);
+ rate (  *getarg(1) , *getarg(2) );
+ hoc_retpushx(_r);
 }
  
-static int _ode_count(_type) int _type;{ return 1;}
+static int _ode_count(int _type){ return 1;}
  
-static int _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
+static void _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
    Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
@@ -331,7 +352,7 @@ static int _ode_spec(_NrnThread* _nt, _Memb_list* _ml, int _type) {
      _ode_spec1 ();
   }}
  
-static int _ode_map(_ieq, _pv, _pvdot, _pp, _ppd, _atol, _type) int _ieq, _type; double** _pv, **_pvdot, *_pp, *_atol; Datum* _ppd; { 
+static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum* _ppd, double* _atol, int _type) { 
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
 	for (_i=0; _i < 1; ++_i) {
@@ -340,7 +361,7 @@ static int _ode_map(_ieq, _pv, _pvdot, _pp, _ppd, _atol, _type) int _ieq, _type;
 	}
  }
  
-static int _ode_matsol(_NrnThread* _nt, _Memb_list* _ml, int _type) {
+static void _ode_matsol(_NrnThread* _nt, _Memb_list* _ml, int _type) {
    Datum* _thread;
    Node* _nd; double _v; int _iml, _cntml;
   _cntml = _ml->_nodecount;
@@ -491,7 +512,7 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   ek = _ion_ek;
  { {
  for (; t < _break; t += dt) {
- error = 0; _deriv1_advance = 1;
+ error = _deriv1_advance = 1;
  derivimplicit(_ninits, 1, _slist1, _dlist1, _p, &t, dt, state, &_temp1);
 _deriv1_advance = 0;
  if(error){fprintf(stderr,"at line 65 in file cagk.mod:\n	SOLVE state METHOD derivimplicit\n"); nrn_complain(_p); abort_run(error);}
@@ -502,9 +523,9 @@ _deriv1_advance = 0;
 
 }
 
-static terminal(){}
+static void terminal(){}
 
-static _initlists() {
+static void _initlists() {
  int _i; static int _first = 1;
   if (!_first) return;
  _slist1[0] = &(o) - _p;  _dlist1[0] = &(Do) - _p;

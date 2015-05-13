@@ -3,23 +3,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "scoplib.h"
+#include "scoplib_ansi.h"
 #undef PI
- 
+#define nil 0
 #include "md1redef.h"
 #include "section.h"
+#include "nrniv_mf.h"
 #include "md2redef.h"
-
+ 
 #if METHOD3
 extern int _method3;
 #endif
 
+#if !NRNGPU
 #undef exp
 #define exp hoc_Exp
-extern double hoc_Exp();
+extern double hoc_Exp(double);
+#endif
  
 #define _threadargscomma_ /**/
 #define _threadargs_ /**/
+ 
+#define _threadargsprotocomma_ /**/
+#define _threadargsproto_ /**/
  	/*SUPPRESS 761*/
 	/*SUPPRESS 762*/
 	/*SUPPRESS 763*/
@@ -66,6 +72,10 @@ extern double hoc_Exp();
 #define h _mlhh
 #endif
 #endif
+ 
+#if defined(__cplusplus)
+extern "C" {
+#endif
  static int hoc_nrnpointerindex =  2;
  /* external NEURON variables */
  /* declaration of user functions */
@@ -78,7 +88,12 @@ extern double hoc_Exp();
  static double _hoc_seed();
  static double _hoc_unirand();
  static int _mechtype;
-extern int nrn_get_mechtype();
+extern void _nrn_cacheloop_reg(int, int);
+extern void hoc_register_prop_size(int, int, int);
+extern void hoc_register_limits(int, HocParmLimits*);
+extern void hoc_register_units(int, HocParmUnits*);
+extern void nrn_promote(Prop*, int, int);
+extern Memb_func* memb_func;
  extern Prop* nrn_point_prop_;
  static int _pointtype;
  static void* _hoc_create_pnt(_ho) Object* _ho; { void* create_point_process();
@@ -98,16 +113,15 @@ extern int nrn_get_mechtype();
  static void _setdata(Prop* _prop) {
  _p = _prop->param; _ppvar = _prop->dparam;
  }
- static _hoc_setdata(_vptr) void* _vptr; { Prop* _prop;
+ static void _hoc_setdata(void* _vptr) { Prop* _prop;
  _prop = ((Point_process*)_vptr)->_prop;
    _setdata(_prop);
  }
  /* connect user functions to hoc names */
- static IntFunc hoc_intfunc[] = {
+ static VoidFunc hoc_intfunc[] = {
  0,0
 };
- static struct Member_func {
-	char* _name; double (*_member)();} _member_func[] = {
+ static Member_func _member_func[] = {
  "loc", _hoc_loc_pnt,
  "has_loc", _hoc_has_loc,
  "get_loc", _hoc_get_loc_pnt,
@@ -125,10 +139,10 @@ extern int nrn_get_mechtype();
 #define invl invl_PT1dStim
 #define rate rate_PT1dStim
 #define unirand unirand_PT1dStim
- extern double erand();
- extern double invl();
- extern double rate();
- extern double unirand();
+ extern double erand( );
+ extern double invl( double );
+ extern double rate( );
+ extern double unirand( );
  /* declare global and static user variables */
  /* some parameters have upper and lower limits */
  static HocParmLimits _hoc_parm_limits[] = {
@@ -161,12 +175,14 @@ extern int nrn_get_mechtype();
  0,0,0
 };
  static double _sav_indep;
- static void nrn_alloc(), nrn_init(), nrn_state();
+ static void nrn_alloc(Prop*);
+static void  nrn_init(_NrnThread*, _Memb_list*, int);
+static void nrn_state(_NrnThread*, _Memb_list*, int);
  static void _hoc_destroy_pnt(_vptr) void* _vptr; {
    destroy_point_process(_vptr);
 }
  /* connect range variables in _p that hoc is supposed to know about */
- static char *_mechanism[] = {
+ static const char *_mechanism[] = {
  "6.2.0",
 "PT1dStim",
  "start",
@@ -193,10 +209,10 @@ extern int nrn_get_mechtype();
  "donotuse",
  0};
  
-static void nrn_alloc(_prop)
-	Prop *_prop;
-{
-	Prop *prop_ion, *need_memb();
+extern Prop* need_memb(Symbol*);
+
+static void nrn_alloc(Prop* _prop) {
+	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
   if (nrn_point_prop_) {
 	_prop->_alloc_seq = nrn_point_prop_->_alloc_seq;
@@ -227,21 +243,23 @@ static void nrn_alloc(_prop)
  	/*connect ionic variables to this model*/
  
 }
- static _initlists();
+ static void _initlists();
  
 #define _tqitem &(_ppvar[3]._pvoid)
- static _net_receive();
- typedef (*_Pfrv)();
- extern _Pfrv* pnt_receive;
- extern short* pnt_receive_size;
- _PT1dstim_reg() {
+ static void _net_receive(Point_process*, double*, double);
+ extern Symbol* hoc_lookup(const char*);
+extern void _nrn_thread_reg(int, int, void(*f)(Datum*));
+extern void _nrn_thread_table_reg(int, void(*)(double*, Datum*, Datum*, _NrnThread*, int));
+extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
+extern void _cvode_abstol( Symbol**, double*, int);
+
+ void _PT1dstim_reg() {
 	int _vectorized = 0;
   _initlists();
  	_pointtype = point_register_mech(_mechanism,
-	 nrn_alloc,0, 0, 0, nrn_init,
-	 hoc_nrnpointerindex,
-	 _hoc_create_pnt, _hoc_destroy_pnt, _member_func,
-	 0);
+	 nrn_alloc,(void*)0, (void*)0, (void*)0, nrn_init,
+	 hoc_nrnpointerindex, 0,
+	 _hoc_create_pnt, _hoc_destroy_pnt, _member_func);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
   hoc_register_dparam_size(_mechtype, 4);
@@ -250,7 +268,7 @@ static void nrn_alloc(_prop)
  pnt_receive[_mechtype] = _net_receive;
  pnt_receive_size[_mechtype] = 1;
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 PT1dStim /cygdrive/c/Documents and Settings/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/PT1dstim.mod\n");
+ 	ivoc_help("help ?1 PT1dStim C:/Users/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/PT1dstim.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -261,45 +279,39 @@ static char *modelname = "";
 static int error;
 static int _ninits = 0;
 static int _match_recurse=1;
-static _modl_cleanup(){ _match_recurse=1;}
-static init_sequence();
-static next_invl();
-static noiseFromRandom();
-static seed();
+static void _modl_cleanup(){ _match_recurse=1;}
+static int init_sequence(double);
+static int next_invl();
+static int noiseFromRandom();
+static int seed(double);
  
-static int  seed (  _lx )  
-	double _lx ;
- {
+static int  seed (  double _lx ) {
    set_seed ( _lx ) ;
     return 0; }
  
-static double _hoc_seed(_vptr) void* _vptr; {
+static double _hoc_seed(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
  _r = 1.;
- seed (  *getarg(1) ) ;
+ seed (  *getarg(1) );
  return(_r);
 }
  
-static int  init_sequence (  _lt )  
-	double _lt ;
- {
+static int  init_sequence (  double _lt ) {
    on = 1.0 ;
    event = 0.0 ;
    ispike = 0.0 ;
     return 0; }
  
-static double _hoc_init_sequence(_vptr) void* _vptr; {
+static double _hoc_init_sequence(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
  _r = 1.;
- init_sequence (  *getarg(1) ) ;
+ init_sequence (  *getarg(1) );
  return(_r);
 }
  
-double invl (  _lmean )  
-	double _lmean ;
- {
+double invl (  double _lmean ) {
    double _linvl;
  if ( _lmean <= 0. ) {
      _lmean = .01 ;
@@ -314,10 +326,10 @@ double invl (  _lmean )
 return _linvl;
  }
  
-static double _hoc_invl(_vptr) void* _vptr; {
+static double _hoc_invl(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
- _r =  invl (  *getarg(1) ) ;
+ _r =  invl (  *getarg(1) );
  return(_r);
 }
  
@@ -325,7 +337,7 @@ static double _hoc_invl(_vptr) void* _vptr; {
 double nrn_random_pick(void* r);
 void* nrn_random_arg(int argpos);
  
-double erand (  )  {
+double erand (  ) {
    double _lerand;
  
 /*VERBATIM*/
@@ -345,14 +357,14 @@ double erand (  )  {
 return _lerand;
  }
  
-static double _hoc_erand(_vptr) void* _vptr; {
+static double _hoc_erand(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
- _r =  erand (  ) ;
+ _r =  erand (  );
  return(_r);
 }
  
-static int  noiseFromRandom (  )  {
+static int  noiseFromRandom (  ) {
    
 /*VERBATIM*/
  {
@@ -365,15 +377,15 @@ static int  noiseFromRandom (  )  {
  }
   return 0; }
  
-static double _hoc_noiseFromRandom(_vptr) void* _vptr; {
+static double _hoc_noiseFromRandom(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
  _r = 1.;
- noiseFromRandom (  ) ;
+ noiseFromRandom (  );
  return(_r);
 }
  
-static int  next_invl (  )  {
+static int  next_invl (  ) {
    interval = 1000.0 / maxfr ;
    if ( t < runend ) {
      event = invl ( _threadargscomma_ interval ) ;
@@ -383,15 +395,15 @@ static int  next_invl (  )  {
      }
     return 0; }
  
-static double _hoc_next_invl(_vptr) void* _vptr; {
+static double _hoc_next_invl(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
  _r = 1.;
- next_invl (  ) ;
+ next_invl (  );
  return(_r);
 }
  
-static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; double _lflag; 
+static void _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; double _lflag; 
 {    _p = _pnt->_prop->param; _ppvar = _pnt->_prop->dparam;
   if (_tsav > t){ extern char* hoc_object_name(); hoc_execerror(hoc_object_name(_pnt->ob), ":Event arrived out of order. Must call ParallelContext.set_maxstep AFTER assigning minimum NetCon.delay");}
  _tsav = t;   if (_lflag == 1. ) {*(_tqitem) = 0;}
@@ -436,7 +448,7 @@ static _net_receive (_pnt, _args, _lflag) Point_process* _pnt; double* _args; do
      }
    } }
  
-double rate (  )  {
+double rate (  ) {
    double _lrate;
  _lrate = 0.0 ;
    if ( t >= runstart  && xd < maxdist ) {
@@ -452,24 +464,24 @@ double rate (  )  {
 return _lrate;
  }
  
-static double _hoc_rate(_vptr) void* _vptr; {
+static double _hoc_rate(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
- _r =  rate (  ) ;
+ _r =  rate (  );
  return(_r);
 }
  
-double unirand (  )  {
+double unirand (  ) {
    double _lunirand;
  _lunirand = scop_random ( ) ;
    
 return _lunirand;
  }
  
-static double _hoc_unirand(_vptr) void* _vptr; {
+static double _hoc_unirand(void* _vptr) {
  double _r;
     _hoc_setdata(_vptr);
- _r =  unirand (  ) ;
+ _r =  unirand (  );
  return(_r);
 }
 
@@ -538,9 +550,9 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 
 }
 
-static terminal(){}
+static void terminal(){}
 
-static _initlists() {
+static void _initlists() {
  int _i; static int _first = 1;
   if (!_first) return;
 _first = 0;

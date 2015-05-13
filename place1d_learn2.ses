@@ -1,48 +1,28 @@
 {load_file("nrngui.hoc")}
 objectvar save_window_, rvp_
-objectvar scene_vector_[7]
+objectvar scene_vector_[6]
 objectvar ocbox_, ocbox_list_, scene_, scene_list_
 {ocbox_list_ = new List()  scene_list_ = new List()}
 {pwman_place(0,0,0)}
 {
-xpanel("Inputs", 0)
-xlabel("Spiking")
-PLmaxfr = 8
-xvalue("CA3 max freq","PLmaxfr", 1,"setCA3spikes()", 0, 1 )
-CA3noise = 0.5
-xvalue("CA3 Noise","CA3noise", 1,"setCA3spikes()", 0, 1 )
-ECPLmaxfr = 15
-xvalue("EC max freq","ECPLmaxfr", 1,"setECspikes()", 0, 1 )
-ECnoise = 0.5
-xvalue("EC Noise","ECnoise", 1,"setECspikes()", 0, 1 )
-xlabel("Excitatory weights")
-CA3wmax = 0.005
-xvalue("CA3 max AMPA","CA3wmax", 1,"setEweights()", 0, 1 )
-CA3wmin = 0.5
-xvalue("CA3 min frac AMPA","CA3wmin", 1,"setEweights()", 0, 1 )
-CA3wN = 0.001
-xvalue("CA3 NMDA","CA3wN", 1,"setEweights()", 0, 1 )
-CA3p0 = 0
-xvalue("CA3 plasticity","CA3p0", 1,"setEweights()", 0, 1 )
-ECwmax = 0.0005
-xvalue("EC max AMPA","ECwmax", 1,"setEweights()", 0, 1 )
-ECwmin = 1
-xvalue("EC min frac AMPA","ECwmin", 1,"setEweights()", 0, 1 )
-ECwN = 0.005
-xvalue("EC NMDA","ECwN", 1,"setEweights()", 0, 1 )
-xlabel("Inhibitory drive")
-thetafr = 5
-xvalue("Theta frequency","thetafr", 1,"setINamps()", 0, 0 )
-Ithdr = 0.005
-xvalue("I strength","Ithdr", 1,"setINamps()", 0, 0 )
-Bthdr = 0.0025
-xvalue("B strength","Bthdr", 1,"setINamps()", 0, 0 )
-Othdr = 0.001
-xvalue("O strength","Othdr", 1,"setINamps()", 0, 0 )
-xpanel(291,123)
-}
-{
 xpanel("Data analysis", 0)
+xbutton("Calculate peak Ca","avgsynca()")
+camax = 0
+xvalue("Maximum Ca","camax", 0,"", 0, 0 )
+camin = 0
+xvalue("Minimum Ca","camin", 0,"", 0, 0 )
+caavg = 0
+xvalue("Average Ca","caavg", 0,"", 0, 0 )
+castd = 0
+xvalue("Std dev Ca","castd", 0,"", 0, 0 )
+capkmax = 0
+xvalue("Max peak Ca","capkmax", 0,"", 0, 0 )
+capkmin = 0
+xvalue("Min peak Ca","capkmin", 0,"", 0, 0 )
+capkavg = 0
+xvalue("Avg peak Ca","capkavg", 0,"", 0, 0 )
+capkstd = 0
+xvalue("Std peak Ca","capkstd", 0,"", 0, 0 )
 xbutton("Calculate p and R","avgpot()")
 xlabel("Current run")
 pmax = 0
@@ -70,7 +50,44 @@ Rallavg = 0
 xvalue("Average R","Rallavg", 0,"", 0, 0 )
 Rallstd = 0
 xvalue("Std dev R","Rallstd", 0,"", 0, 0 )
-xpanel(451,354)
+xpanel(1395,55)
+}
+{
+xpanel("Inputs", 0)
+xlabel("Spiking")
+PLmaxfr = 8
+xvalue("CA3 max freq","PLmaxfr", 1,"setCA3spikes()", 0, 1 )
+CA3noise = 0.5
+xvalue("CA3 Noise","CA3noise", 1,"setCA3spikes()", 0, 1 )
+ECPLmaxfr = 15
+xvalue("EC max freq","ECPLmaxfr", 1,"setECspikes()", 0, 1 )
+ECnoise = 0.5
+xvalue("EC Noise","ECnoise", 1,"setECspikes()", 0, 1 )
+xlabel("Excitatory weights")
+CA3wmax = 0.005
+xvalue("CA3 max AMPA","CA3wmax", 1,"setEweights()", 0, 1 )
+CA3wmin = 0.2
+xvalue("CA3 min frac AMPA","CA3wmin", 1,"setEweights()", 0, 1 )
+CA3wN = 0.0005
+xvalue("CA3 NMDA","CA3wN", 1,"setEweights()", 0, 1 )
+CA3p0 = 0
+xvalue("CA3 plasticity","CA3p0", 1,"setEweights()", 0, 1 )
+ECwmax = 0.0005
+xvalue("EC max AMPA","ECwmax", 1,"setEweights()", 0, 1 )
+ECwmin = 1
+xvalue("EC min frac AMPA","ECwmin", 1,"setEweights()", 0, 1 )
+ECwN = 0.001
+xvalue("EC NMDA","ECwN", 1,"setEweights()", 0, 1 )
+xlabel("Inhibitory drive")
+thetafr = 5
+xvalue("Theta frequency","thetafr", 1,"setINamps()", 0, 0 )
+Ithdr = 0.005
+xvalue("I strength","Ithdr", 1,"setINamps()", 0, 0 )
+Bthdr = 0.0025
+xvalue("B strength","Bthdr", 1,"setINamps()", 0, 0 )
+Othdr = 0.001
+xvalue("O strength","Othdr", 1,"setINamps()", 0, 0 )
+xpanel(290,122)
 }
 {
 xpanel("RunControl", 0)
@@ -85,7 +102,7 @@ xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1
 xbutton("Single Step","steprun()")
 t = 150000
 xvalue("t","t", 2 )
-tstop = 150000
+tstop = 50000
 xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
 dt = 0.42712
 xvalue("dt","dt", 1,"setdt()", 0, 1 )
@@ -99,18 +116,18 @@ xpanel(0,126)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,150000,-80,40)
+save_window_.size(0,50000,-80,40)
 scene_vector_[2] = save_window_
-{save_window_.view(0, -80, 150000, 120, 690, 12, 654.3, 191.8)}
+{save_window_.view(0, -80, 50000, 120, 690, 12, 654.3, 191.8)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,150000,-0.0001,0.005)
+save_window_.size(0,50000,-0.0001,0.005)
 scene_vector_[3] = save_window_
-{save_window_.view(0, -0.0001, 150000, 0.0051, 690, 342, 654.3, 93.7)}
+{save_window_.view(0, -0.0001, 50000, 0.0051, 690, 342, 654.3, 93.7)}
 graphList[2].append(save_window_)
 save_window_.save_name("graphList[2].")
 save_window_.addvar("CA3syn[0].g", 1, 1, 0.8, 0.9, 2)
@@ -118,9 +135,9 @@ save_window_.addexpr("CA3syn[1].g", 2, 1, 0.8, 0.9, 2)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,150000,0,0.0061)
+save_window_.size(0,50000,0,0.0061)
 scene_vector_[4] = save_window_
-{save_window_.view(0, 0, 150000, 0.0061, 690, 534, 656.1, 181)}
+{save_window_.view(0, 0, 50000, 0.0061, 690, 534, 656.1, 181)}
 graphList[2].append(save_window_)
 save_window_.save_name("graphList[2].")
 save_window_.addvar("CA3syn[0].ca", 1, 1, 0.8, 0.9, 2)
@@ -136,9 +153,9 @@ gp_ANsynGB = 1600
 xvalue("gp_ANsynGB","gp_ANsynGB", 1,"", 0, 0 )
 gd_ANsynGB = 300
 xvalue("gd_ANsynGB","gd_ANsynGB", 1,"", 0, 0 )
-thp_ANsynGB = 3
+thp_ANsynGB = 100
 xvalue("thp_ANsynGB","thp_ANsynGB", 1,"", 0, 0 )
-thd_ANsynGB = 2
+thd_ANsynGB = 100
 xvalue("thd_ANsynGB","thd_ANsynGB", 1,"", 0, 0 )
 tp_ANsynGB = 20000
 xvalue("tp_ANsynGB","tp_ANsynGB", 1,"", 0, 0 )
@@ -148,15 +165,13 @@ xpanel(0,552)
 }
 {
 save_window_ = new Graph(0)
-save_window_.size(0,150000,0,1)
+save_window_.size(0,50000,0,1)
 scene_vector_[5] = save_window_
-{save_window_.view(0, 0, 150000, 1, 544, 291, 382.5, 200.8)}
+{save_window_.view(0, 0, 50000, 1, 543, 290, 382.5, 200.8)}
 graphList[2].append(save_window_)
 save_window_.save_name("graphList[2].")
 save_window_.addvar("CA3syn[0].p", 1, 1, 0.8, 0.9, 2)
 save_window_.addvar("CA3syn[0].R", 2, 1, 0.8, 0.9, 2)
 }
-save_window_ = scene_vector_[4]
-{save_window_.view(12263.4, 1.17956e-05, 5967.08, 0.00367011, 831, 609, 100.8, 109)}
 objectvar scene_vector_[1]
 {doNotify()}
