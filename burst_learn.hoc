@@ -1,0 +1,472 @@
+// Test pathway learning to bursting inputs.
+// Single PC with plastic synapses.
+// New 5-cpt PC model based on Tort, but using ion channels and distributions
+// from my Migliore-adapted PC model from Neural Computation (2014) paper.
+// PC driven by multiple spiking inputs from CA3 and/or EC to dendrites.
+// CA3 and EC input spiking set to mimic theta modulated place field firing using burst inputs.
+// (as per NC paper, but will use continuous inputs, rather than just one)
+// Rhythmic GClamp inhibition can be added to the dendrites.
+// Graupner-Brunel plasticity available for excitatory synapses.
+// (Uses combined AMPA/NMDA/plasticity model: ANsynGB).
+// Programmed by BPG 27-8-15
+
+load_file("nrngui.hoc") // make graphical interface tools available to this program
+load_file("CA1PC5.hoc")
+cvode_active(1)		// needed to correct synaptic plasticity calculations at least
+
+// RANDOM NUMBER GENERATORS
+objref r
+r = new Random(0)	// start each with a different seed
+
+Tstop=200000	// ms
+
+// CREATING CELL
+objectvar cell
+cell = new PCell5()
+
+
+// PRESYNAPTIC SPIKING INPUTS
+thetafr = 5	// Hz
+thetaper = 1000/thetafr	// period (ms)
+
+// CA3 spiking
+CA3burstnum = 10000	// number of bursts
+CA3start = thetaper	// allow one theta startup time
+CA3spfreq = 20	// (Hz) spike frequency in a burst
+CA3spint = 1000/CA3spfreq	// (ms) spike interval in a burst
+CA3noise = 0.5
+CA3burstlength = 10	// (ms) determines number of spikes per burst
+CA3burstint = thetaper - CA3burstlength
+
+
+// EC spiking
+ECburstnum = 10000	// number of bursts
+ECstart = thetaper	// allow one theta startup time
+ECspfreq = 20	// (Hz) spike frequency in a burst
+ECspint = 1000/ECspfreq	// (ms) spike interval in a burst
+ECnoise = 0.5
+ECburstlength = 10	// (ms) determines number of spikes per burst
+ECburstint = thetaper - ECburstlength
+
+// CA3 and EC weights
+// (following max CA3 weight gives an EPSC of 110pA in soma with 10 synch input spikes in Adend[1])
+// (somatic current recorded with SEClamp point process)
+CA3wmax = 0.005	// AMPA (strong) - maximum learnt weight (spiking with asynch inputs)
+//CA3wmax = 0.0005	// AMPA (strong) - maximum learnt weight (10 synchronous inputs)
+//CA3wmax = 0.0002	// AMPA (strong) - maximum learnt weight (use in Adend[0])
+//CA3wmin = 0.2	// AMPA - starting weight (fraction of wmax)
+CA3wmin = 1	// AMPA - starting weight (fraction of wmax)
+CA3wN = 0.001	// NMDA
+CA3p0 = 0	// initial plastic state (0=depressed, 1=potentiated)
+ECwmax = 0.0005	// AMPA (strong) - maximum learnt weight
+ECwmin = 1	// AMPA - starting weight (fraction of wmax)
+ECwN = 0.004	// NMDA
+
+// RHYTHMIC INHIBITION
+Ithdr=0.01	// uS
+Bthdr=0.005	// uS
+Othdr=0.005	// uS
+
+// RECORDING AND STIMULATION
+nCA3 = 50	// approx. number of inputs generated in W&W experiments
+//nEC = 20
+//nCA3 = 100	// approx. number of inputs generated in W&W experiments
+nEC = 100
+objectvar CA3spikes[nCA3], CA3syn[nCA3], CA3nc[nCA3]
+objectvar ECspikes[nEC], ECnc[nEC], ECsyn[nEC]
+objref tvec
+
+// Excitatory stimulation
+// spiking CA3 input
+for i = 0,nCA3-1 {
+	CA3spikes[i] = new BurstStim3()
+    	CA3spikes[i].number = CA3burstnum
+    	CA3spikes[i].start = CA3start
+    	CA3spikes[i].interval = CA3spint
+    	CA3spikes[i].noise = CA3noise
+   	CA3spikes[i].burstint = CA3burstint
+    	CA3spikes[i].burstlen = CA3burstlength
+	cell.Adend[1] CA3syn[i] = new ANsynGB(0.5)
+	CA3nc[i] = new NetCon(CA3spikes[i], CA3syn[i])
+	CA3nc[i].weight= CA3wmax
+	CA3syn[i].wmin = CA3wmin
+	CA3syn[i].gNmax = CA3wN
+	CA3syn[i].p0 = CA3p0
+}
+
+// spiking EC input
+for i = 0,nEC-1 {
+	ECspikes[i] = new BurstStim3()
+    	ECspikes[i].number = ECburstnum
+    	ECspikes[i].start = ECstart
+    	ECspikes[i].interval = ECspint
+    	ECspikes[i].noise = ECnoise
+    	ECspikes[i].burstint = ECburstint
+    	ECspikes[i].burstlen = ECburstlength
+	cell.Adend[2] ECsyn[i] = new ANsynGB(0.5)
+	ECnc[i] = new NetCon(ECspikes[i], ECsyn[i])
+	ECnc[i].weight= ECwmax
+	ECsyn[i].wmin = ECwmin
+	ECsyn[i].gNmax = ECwN
+}
+							
+// Inhibitory stimulation
+objectvar ostim, istim, bstim
+objectvar btheta, itheta, otheta
+
+// BC perisomatic inhib
+istim = new GClamp()
+cell.soma istim.loc(0.5)
+istim.del = 0
+istim.dur = Tstop
+istim.erev = -80
+istim.amp = Ithdr
+itheta = new Vector(Tstop)
+if (thetafr > 0) {
+	itheta.sin(thetafr, 0)
+	itheta.add(1)
+	itheta.mul(Ithdr)
+	itheta.play(&istim.amp, 1)
+}
+
+// BSC dendritic inhib
+bstim = new GClamp()
+cell.Adend[1] bstim.loc(0.5)
+bstim.del = 0
+bstim.dur = Tstop
+bstim.erev = -80
+bstim.amp = Bthdr
+btheta = new Vector(Tstop)
+if (thetafr > 0) {
+	btheta.sin(thetafr, PI)
+	btheta.add(1)
+	btheta.mul(Bthdr)
+	btheta.play(&bstim.amp, 1)
+}
+
+// OLM distal dendritic inhib
+ostim = new GClamp()
+cell.Adend[2] ostim.loc(0.5)
+ostim.del = 0
+ostim.dur = Tstop
+ostim.erev = -80
+ostim.amp = Othdr
+otheta = new Vector(Tstop)
+if (thetafr > 0) {
+	otheta.sin(thetafr, PI)
+	otheta.add(1)
+	otheta.mul(Othdr)
+	otheta.play(&ostim.amp, 1)
+}
+
+
+// PARAMETER CONTROL
+
+// Set all when theta frequency changed
+proc setALL() {
+	setCA3spikes()
+	setECspikes()
+	setINamps()
+}
+
+// Set CA3 spikes
+proc setCA3spikes() {
+	for i=0, nCA3-1 {
+    	CA3spikes[i].number = CA3burstnum
+    	CA3spikes[i].start = CA3start
+	CA3spint = 1000/CA3spfreq	// (ms) spike interval in a burst
+    	CA3spikes[i].interval = CA3spint
+    	CA3spikes[i].noise = CA3noise
+	CA3burstint = thetaper - CA3burstlength
+    	CA3spikes[i].burstint = CA3burstint
+    	CA3spikes[i].burstlen = CA3burstlength
+	}
+}
+
+// Set pairing
+proc setECspikes() {
+	for i=0, nEC-1 {
+    	ECspikes[i].number = ECburstnum
+    	ECspikes[i].start = ECstart
+	ECspint = 1000/ECspfreq	// (ms) spike interval in a burst
+    	ECspikes[i].interval = ECspint
+    	ECspikes[i].noise = ECnoise
+	ECburstint = thetaper - ECburstlength
+    	ECspikes[i].burstint = ECburstint
+    	ECspikes[i].burstlen = ECburstlength
+	}
+}
+
+// Excitatory weights
+proc setEweights() {
+	for i=0, nCA3-1 {
+		CA3nc[i].weight= CA3wmax
+		CA3syn[i].wmin = CA3wmin
+		CA3syn[i].gNmax = CA3wN
+		CA3syn[i].p0 = CA3p0
+	}
+	for i=0, nEC-1 {
+		ECnc[i].weight= ECwmax
+		ECsyn[i].wmin = ECwmin
+		ECsyn[i].gNmax = ECwN
+	}
+}
+
+// Inhibitory strengths
+proc setINamps() {
+	if (thetafr > 0) {
+		itheta.sin(thetafr, 0)
+		itheta.add(1)
+		itheta.mul(Ithdr)
+		itheta.play(&istim.amp, 1)
+		btheta.sin(thetafr, PI)
+		btheta.add(1)
+		btheta.mul(Bthdr)
+		btheta.play(&bstim.amp, 1)
+		otheta.sin(thetafr, PI)
+		otheta.add(1)
+		otheta.mul(Othdr)
+		otheta.play(&ostim.amp, 1)
+	} else {
+		itheta.play_remove()
+		btheta.play_remove()
+		otheta.play_remove()
+		istim.amp = Ithdr
+		bstim.amp = Bthdr
+		ostim.amp = Othdr
+	}
+}
+
+
+// GUI
+proc inputGUI() {
+	xpanel("Inputs")
+	xlabel("Theta")
+	xvalue("Theta frequency", "thetafr", 1, "setAll()")
+	xlabel("CA3 spiking")
+	xpvalue("CA3 start", &CA3start, 1, "setCA3spikes()")	
+	xpvalue("CA3 freq", &CA3spfreq, 1, "setCA3spikes()")	
+	xpvalue("CA3 noise", &CA3noise, 1, "setCA3spikes()")	
+	xpvalue("CA3 burst length", &CA3burstlength, 1, "setCA3spikes()")	
+	xlabel("EC spiking")
+	xpvalue("EC start", &ECstart, 1, "setECspikes()")	
+	xpvalue("EC freq", &ECspfreq, 1, "setECspikes()")	
+	xpvalue("EC noise", &ECnoise, 1, "setECspikes()")	
+	xpvalue("EC burst length", &ECburstlength, 1, "setECspikes()")	
+	xlabel("Excitatory weights")
+	xpvalue("CA3 max AMPA", &CA3wmax, 1, "setEweights()")
+	xpvalue("CA3 min frac AMPA", &CA3wmin, 1, "setEweights()")
+	xpvalue("CA3 NMDA", &CA3wN, 1, "setEweights()")
+	xpvalue("CA3 plasticity", &CA3p0, 1, "setEweights()")
+	xpvalue("EC max AMPA", &ECwmax, 1, "setEweights()")
+	xpvalue("EC min frac AMPA", &ECwmin, 1, "setEweights()")
+	xpvalue("EC NMDA", &ECwN, 1, "setEweights()")
+	xlabel("Inhibitory drive")
+	xvalue("I strength", "Ithdr", 1, "setINamps()")
+	xvalue("B strength", "Bthdr", 1, "setINamps()")
+	xvalue("O strength", "Othdr", 1, "setINamps()")
+	xpanel()
+}
+
+//###########################################################################
+// Data recordings and storage
+
+// Record cell voltage, current and calcium traces
+objref Ev, EA1v, EA2v // Vectors that record cell voltage traces
+objref Evt, EA1vt, EA2vt // Vectors that record times
+objref EA1ca, EA1cat	// Dendritic calcium
+
+// Data storage
+objref fo
+strdef fno, ff, fstem, prefolder, prestem
+
+DT = 1	// record time every 1 ms
+
+prefolder = "../../../Results/ThetaGamma"
+prestem = "run"
+expdate = 270815	// today's date
+exprun = 1		// run number
+
+// Store generic data
+proc storedata() { local i
+	sprint(fno,"%s/%s_%s.dat", $s1, $s2, $s3)
+	fo = new File(fno)
+	fo.wopen()
+	for i=0, $o4.size-1 {
+        	fo.printf("%g %g\n", $o5.x[i], $o4.x[i])
+	}
+	fo.close()
+}
+
+// Record soma voltage traces from example cells
+proc recordV() { 
+	Ev = new Vector()
+	Evt = new Vector()
+	EA1v = new Vector()
+	EA1vt = new Vector()
+	EA2v = new Vector()
+	EA2vt = new Vector()
+	
+	cell.soma cvode.record(&v(0.5), Ev, Evt)
+	cell.Adend[1] cvode.record(&v(0.5), EA1v, EA1vt)
+	cell.Adend[2] cvode.record(&v(0.5), EA2v, EA2vt)
+}
+
+// Store voltage traces
+proc storeVall() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EvSoma", Ev, Evt)
+	storedata(ff, fstem, "EvAd1", EA1v, EA1vt)
+	storedata(ff, fstem, "EvAd2", EA2v, EA2vt)
+}
+
+// Record dendritic calcium traces from example cells
+proc recordCa() { 
+	EA1ca = new Vector()
+	EA1cat = new Vector()
+	
+	cell.Adend[1] cvode.record(&cai(0.5), EA1ca, EA1cat)
+}
+
+// Store calcium traces
+proc storeCa() {
+	sprint(ff, "%s/%g", prefolder, expdate)
+	sprint(fstem, "run%g", exprun)
+	
+	storedata(ff, fstem, "EcaAd1", EA1ca, EA1cat)
+}
+
+
+proc dataGUI() {
+  	xpanel("Data output")
+  	xlabel("Show inputs")
+  	xbutton("Spike raster", "showraster()")
+  	xbutton("Spike histogram", "showhist()")
+  	xlabel("Data output")
+  	xvalue("Date (ddmmyy)", "expdate")
+  	xvalue("Experiment run", "exprun")
+  	xbutton("Store voltage traces", "storeVall()")
+  	xbutton("Store calcium traces", "storeCa()")
+  	xpanel()
+}
+
+
+// DATA ANALYSIS
+objref potdata, pall, Rdata, Rall, capavgd, camaxd
+pall = new Vector()
+Rall = new Vector()
+pmax = 0
+pmin = 0
+pavg = 0
+pstd = 0
+pallavg = 0
+pallstd = 0
+Rmax = 0
+Rmin = 0
+Ravg = 0
+Rstd = 0
+Rallavg = 0
+Rallstd = 0
+camax = 0
+camin = 0
+caavg = 0
+castd = 0
+capkmax = 0
+capkmin = 0
+capkavg = 0
+capkstd = 0
+
+// Calculate average synaptic "p" and "R" values
+proc avgpot() {
+	// for this run
+	potdata = new Vector(nCA3)
+	Rdata = new Vector(nCA3)
+	for i=0, nCA3-1 {
+		potdata.x[i] = CA3syn[i].p
+		Rdata.x[i] = CA3syn[i].R
+	}
+	pmax = potdata.max()
+	pmin = potdata.min()
+	pavg = potdata.mean()
+	pstd = potdata.stdev()
+	Rmax = Rdata.max()
+	Rmin = Rdata.min()
+	Ravg = Rdata.mean()
+	Rstd = Rdata.stdev()
+	
+	// for all runs
+	pall.append(potdata)
+	pallavg = pall.mean()
+	pallstd = pall.stdev()	
+	Rall.append(Rdata)
+	Rallavg = Rall.mean()
+	Rallstd = Rall.stdev()	
+}
+
+// Calculate average synaptic peak calcium values over a single run
+proc avgsynca() {
+	// for this run
+	capavgd = new Vector(nCA3)
+	camaxd = new Vector(nCA3)
+	for i=0, nCA3-1 {
+		if (CA3syn[i].capkn > 0) {
+			capavgd.x[i] = CA3syn[i].capksum / CA3syn[i].capkn
+		}
+		camaxd.x[i] = CA3syn[i].camax
+	}
+	camax = camaxd.max()
+	camin = camaxd.min()
+	caavg = camaxd.mean()
+	castd = camaxd.stdev()
+	capkmax = capavgd.max()
+	capkmin = capavgd.min()
+	capkavg = capavgd.mean()
+	capkstd = capavgd.stdev()
+}
+
+proc analGUI() {
+  	xpanel("Data analysis")
+  	xbutton("Calculate peak Ca", "avgsynca()")
+  	xvalue("Maximum Ca", "camax")
+  	xvalue("Minimum Ca", "camin")
+  	xvalue("Average Ca", "caavg")
+  	xvalue("Std dev Ca", "castd")
+  	xvalue("Max peak Ca", "capkmax")
+  	xvalue("Min peak Ca", "capkmin")
+  	xvalue("Avg peak Ca", "capkavg")
+  	xvalue("Std peak Ca", "capkstd")
+  	xbutton("Calculate p and R", "avgpot()")
+  	xlabel("Current run")
+  	xvalue("Maximum p", "pmax")
+  	xvalue("Minimum p", "pmin")
+  	xvalue("Average p", "pavg")
+  	xvalue("Std dev p", "pstd")
+  	xvalue("Maximum R", "Rmax")
+  	xvalue("Minimum R", "Rmin")
+  	xvalue("Average R", "Ravg")
+  	xvalue("Std dev R", "Rstd")
+  	xlabel("Over all runs")
+  	xvalue("Average p", "pallavg")
+  	xvalue("Std dev p", "pallstd")
+  	xvalue("Average R", "Rallavg")
+  	xvalue("Std dev R", "Rallstd")
+  	xpanel()
+}
+
+
+// Set up recordings
+access cell.soma // by some reason it is only possible to record "t" when a section is accessed
+tvec = new Vector()
+tvec.record(&t,DT)
+recordV()
+recordCa()
+
+// Load GUI
+load_file("spike_graphics.hoc")
+preprasterplot()
+//inputGUI()
+//dataGUI()
+//analGUI()
+load_file("burst_learn.ses")

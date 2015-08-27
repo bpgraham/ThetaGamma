@@ -112,8 +112,8 @@ extern Memb_func* memb_func;
  /* declare global and static user variables */
  /* some parameters have upper and lower limits */
  static HocParmLimits _hoc_parm_limits[] = {
- "tau2", 1e-009, 1e+009,
- "tau1", 1e-009, 1e+009,
+ "tau2", 1e-09, 1e+09,
+ "tau1", 1e-09, 1e+09,
  0,0,0
 };
  static HocParmUnits _hoc_parm_units[] = {
@@ -229,7 +229,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  pnt_receive[_mechtype] = _net_receive;
  pnt_receive_size[_mechtype] = 1;
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 Exp2SynGB C:/Users/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/exp2synGB.mod\n");
+ 	ivoc_help("help ?1 Exp2SynGB /cygdrive/c/Documents and Settings/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/exp2synGB.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }

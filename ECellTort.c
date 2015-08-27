@@ -141,7 +141,7 @@ extern Memb_func* memb_func;
 #define ena ena_Ecell5chann
  double ena = 55;
 #define gl gl_Ecell5chann
- double gl = 3e-005;
+ double gl = 3e-05;
 #define gk gk_Ecell5chann
  double gk = 0.01;
 #define gna gna_Ecell5chann
@@ -303,7 +303,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
  	hoc_register_tolerance(_mechtype, _hoc_state_tol, &_atollist);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 Ecell5chann C:/Users/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/ECellTort.mod\n");
+ 	ivoc_help("help ?1 Ecell5chann /cygdrive/c/Documents and Settings/bpg/Desktop/Projects/CortDyn/Subprojects/CA1rhythms/Code/Neuron/ThetaGamma/ECellTort.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
