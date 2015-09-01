@@ -5,41 +5,27 @@ objectvar ocbox_, ocbox_list_, scene_, scene_list_
 {ocbox_list_ = new List()  scene_list_ = new List()}
 {pwman_place(0,0,0)}
 {
-xpanel("Data output", 0)
-xlabel("Show inputs")
-xbutton("Spike raster","showraster()")
-xbutton("Spike histogram","showhist()")
-xlabel("Data output")
-expdate = 270815
-xvalue("Date (ddmmyy)","expdate", 0,"", 0, 0 )
-exprun = 1
-xvalue("Experiment run","exprun", 0,"", 0, 0 )
-xbutton("Store voltage traces","storeVall()")
-xbutton("Store calcium traces","storeCa()")
-xpanel(46,565)
-}
-{
 xpanel("Inputs", 0)
 xlabel("Theta")
 thetafr = 5
 xvalue("Theta frequency","thetafr", 1,"setAll()", 0, 0 )
 xlabel("CA3 spiking")
-CA3start = 200
+CA3start = 300
 xvalue("CA3 start","CA3start", 1,"setCA3spikes()", 0, 1 )
-CA3spfreq = 20
+CA3spfreq = 100
 xvalue("CA3 freq","CA3spfreq", 1,"setCA3spikes()", 0, 1 )
 CA3noise = 0.5
 xvalue("CA3 noise","CA3noise", 1,"setCA3spikes()", 0, 1 )
-CA3burstlength = 10
+CA3burstlength = 30
 xvalue("CA3 burst length","CA3burstlength", 1,"setCA3spikes()", 0, 1 )
 xlabel("EC spiking")
 ECstart = 200
 xvalue("EC start","ECstart", 1,"setECspikes()", 0, 1 )
-ECspfreq = 20
+ECspfreq = 100
 xvalue("EC freq","ECspfreq", 1,"setECspikes()", 0, 1 )
 ECnoise = 0.5
 xvalue("EC noise","ECnoise", 1,"setECspikes()", 0, 1 )
-ECburstlength = 10
+ECburstlength = 30
 xvalue("EC burst length","ECburstlength", 1,"setECspikes()", 0, 1 )
 xlabel("Excitatory weights")
 CA3wmax = 0.005
@@ -63,7 +49,21 @@ Bthdr = 0.005
 xvalue("B strength","Bthdr", 1,"setINamps()", 0, 0 )
 Othdr = 0.005
 xvalue("O strength","Othdr", 1,"setINamps()", 0, 0 )
-xpanel(295,61)
+xpanel(304,128)
+}
+{
+xpanel("Data output", 0)
+xlabel("Show inputs")
+xbutton("Spike raster","showraster()")
+xbutton("Spike histogram","showhist()")
+xlabel("Data output")
+expdate = 270815
+xvalue("Date (ddmmyy)","expdate", 0,"", 0, 0 )
+exprun = 1
+xvalue("Experiment run","exprun", 0,"", 0, 0 )
+xbutton("Store voltage traces","storeVall()")
+xbutton("Store calcium traces","storeCa()")
+xpanel(45,564)
 }
 {
 xpanel("Data analysis", 0)
@@ -111,7 +111,7 @@ Rallavg = 0
 xvalue("Average R","Rallavg", 0,"", 0, 0 )
 Rallstd = 0
 xvalue("Std dev R","Rallstd", 0,"", 0, 0 )
-xpanel(614,54)
+xpanel(633,91)
 }
 {
 xpanel("RunControl", 0)
@@ -136,13 +136,13 @@ screen_update_invl = 0.05
 xvalue("Scrn update invl","screen_update_invl", 1,"", 0, 1 )
 realtime = 3.6
 xvalue("Real Time","realtime", 0,"", 0, 1 )
-xpanel(7,132)
+xpanel(6,132)
 }
 {
 save_window_ = new Graph(0)
 save_window_.size(0,1000,-80,40)
 scene_vector_[2] = save_window_
-{save_window_.view(0, -80, 1000, 120, 855, 56, 300.6, 200.8)}
+{save_window_.view(0, -80, 1000, 120, 854, 55, 300.6, 200.8)}
 graphList[0].append(save_window_)
 save_window_.save_name("graphList[0].")
 save_window_.addexpr("v(.5)", 1, 1, 0.8, 0.9, 2)

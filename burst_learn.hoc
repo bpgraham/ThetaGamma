@@ -31,21 +31,21 @@ thetaper = 1000/thetafr	// period (ms)
 
 // CA3 spiking
 CA3burstnum = 10000	// number of bursts
-CA3start = thetaper	// allow one theta startup time
-CA3spfreq = 20	// (Hz) spike frequency in a burst
+CA3start = thetaper+thetaper/2	// allow one theta startup time
+CA3spfreq = 100	// (Hz) spike frequency in a burst
 CA3spint = 1000/CA3spfreq	// (ms) spike interval in a burst
 CA3noise = 0.5
-CA3burstlength = 10	// (ms) determines number of spikes per burst
+CA3burstlength = 30	// (ms) determines number of spikes per burst
 CA3burstint = thetaper - CA3burstlength
 
 
 // EC spiking
 ECburstnum = 10000	// number of bursts
 ECstart = thetaper	// allow one theta startup time
-ECspfreq = 20	// (Hz) spike frequency in a burst
+ECspfreq = 100	// (Hz) spike frequency in a burst
 ECspint = 1000/ECspfreq	// (ms) spike interval in a burst
 ECnoise = 0.5
-ECburstlength = 10	// (ms) determines number of spikes per burst
+ECburstlength = 30	// (ms) determines number of spikes per burst
 ECburstint = thetaper - ECburstlength
 
 // CA3 and EC weights
@@ -68,9 +68,7 @@ Bthdr=0.005	// uS
 Othdr=0.005	// uS
 
 // RECORDING AND STIMULATION
-nCA3 = 50	// approx. number of inputs generated in W&W experiments
-//nEC = 20
-//nCA3 = 100	// approx. number of inputs generated in W&W experiments
+nCA3 = 100	// approx. number of inputs generated in W&W experiments
 nEC = 100
 objectvar CA3spikes[nCA3], CA3syn[nCA3], CA3nc[nCA3]
 objectvar ECspikes[nEC], ECnc[nEC], ECsyn[nEC]
@@ -79,7 +77,7 @@ objref tvec
 // Excitatory stimulation
 // spiking CA3 input
 for i = 0,nCA3-1 {
-	CA3spikes[i] = new BurstStim3()
+	CA3spikes[i] = new BurstStim4()
     	CA3spikes[i].number = CA3burstnum
     	CA3spikes[i].start = CA3start
     	CA3spikes[i].interval = CA3spint
@@ -96,7 +94,7 @@ for i = 0,nCA3-1 {
 
 // spiking EC input
 for i = 0,nEC-1 {
-	ECspikes[i] = new BurstStim3()
+	ECspikes[i] = new BurstStim4()
     	ECspikes[i].number = ECburstnum
     	ECspikes[i].start = ECstart
     	ECspikes[i].interval = ECspint
@@ -466,7 +464,7 @@ recordCa()
 // Load GUI
 load_file("spike_graphics.hoc")
 preprasterplot()
-//inputGUI()
+inputGUI()
 //dataGUI()
 //analGUI()
 load_file("burst_learn.ses")
