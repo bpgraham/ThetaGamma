@@ -61,6 +61,7 @@ CA3p0 = 0	// initial plastic state (0=depressed, 1=potentiated)
 ECwmax = 0.0005	// AMPA (strong) - maximum learnt weight
 ECwmin = 1	// AMPA - starting weight (fraction of wmax)
 ECwN = 0.004	// NMDA
+ECp0 = 0	// initial plastic state (0=depressed, 1=potentiated)
 
 // RHYTHMIC INHIBITION
 Ithdr=0.01	// uS
@@ -106,6 +107,7 @@ for i = 0,nEC-1 {
 	ECnc[i].weight= ECwmax
 	ECsyn[i].wmin = ECwmin
 	ECsyn[i].gNmax = ECwN
+	ECsyn[i].p0 = ECp0
 }
 							
 // Inhibitory stimulation
@@ -161,7 +163,9 @@ if (thetafr > 0) {
 // PARAMETER CONTROL
 
 // Set all when theta frequency changed
-proc setALL() {
+proc setAll() {
+	thetaper = 1000/thetafr	// period (ms)
+
 	setCA3spikes()
 	setECspikes()
 	setINamps()
@@ -207,6 +211,7 @@ proc setEweights() {
 		ECnc[i].weight= ECwmax
 		ECsyn[i].wmin = ECwmin
 		ECsyn[i].gNmax = ECwN
+		ECsyn[i].p0 = ECp0
 	}
 }
 
@@ -259,6 +264,7 @@ proc inputGUI() {
 	xpvalue("EC max AMPA", &ECwmax, 1, "setEweights()")
 	xpvalue("EC min frac AMPA", &ECwmin, 1, "setEweights()")
 	xpvalue("EC NMDA", &ECwN, 1, "setEweights()")
+	xpvalue("EC plasticity", &ECp0, 1, "setEweights()")
 	xlabel("Inhibitory drive")
 	xvalue("I strength", "Ithdr", 1, "setINamps()")
 	xvalue("B strength", "Bthdr", 1, "setINamps()")
